@@ -1,0 +1,23 @@
+<h2>Lista de alumnos</h2>
+
+<table border="1">
+    <tr>
+        <th>Nombre</th>
+        <th>No. Cuenta</th>
+        <th>Carrera</th>
+        <th>Semestre</th>
+        <th>PDF</th>
+    </tr>
+
+    {% for alumno in alumnos %}
+    <tr>
+        <td>{{ alumno.nombre }}</td>
+        <td>{{ alumno.numero_cuenta }}</td>
+        <td>{{ alumno.carrera }}</td>
+        <td>{{ alumno.semestre }}</td>
+        <td>
+            <a href="/pdf/{{ alumno.id }}/">Ver PDF</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>

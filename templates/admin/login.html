@@ -1,0 +1,28 @@
+{% extends "admin/login.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="shortcut icon" href="{% static 'img/logo.JPG' %}?v=6" type="image/jpeg">
+<style>
+    body {
+        background-image: url("{% static 'img/fondo.JPG.png' %}") !important;
+        background-size: cover !important;
+        background-position: center top !important;
+        background-attachment: fixed !important;
+        background-repeat: no-repeat !important;
+    }
+
+    /* Oculta el logo gigante que pone Jazzmin */
+    .login-logo, .login-logo img, #login-logo, #login-logo img {
+        display: none !important;
+    }
+
+    #container {
+        background: rgba(255,255,255,0.93) !important;
+        border-radius: 14px !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
+        margin-top: 15vh !important;
+    }
+</style>
+{% endblock %}

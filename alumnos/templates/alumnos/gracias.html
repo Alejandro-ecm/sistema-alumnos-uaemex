@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro enviado – UAEMex</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f4f9f4;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(46,125,50,0.12);
+            padding: 2.5rem 2rem;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            border-top: 5px solid #2e7d32;
+        }
+        .check-circle {
+            width: 72px; height: 72px;
+            background: linear-gradient(135deg, #2e7d32, #66bb6a);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1.2rem;
+            font-size: 32px;
+            color: white;
+            box-shadow: 0 4px 16px rgba(46,125,50,0.3);
+        }
+        h2 { font-size: 22px; font-weight: 700; color: #1b5e20; margin-bottom: 0.4rem; }
+        .alumno-nombre { font-size: 14px; color: #388e3c; font-weight: 600; margin-bottom: 0.3rem; }
+        .sub { font-size: 13px; color: #777; margin-bottom: 1.8rem; line-height: 1.5; }
+        .divider { height: 1px; background: #e8f5e9; margin: 1.5rem 0; }
+        .carta-box {
+            background: #f1fdf3;
+            border: 1.5px solid #a5d6a7;
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 1.2rem;
+        }
+        .carta-box-title { font-size: 13px; font-weight: 700; color: #1b5e20; margin-bottom: 0.4rem; }
+        .carta-box-desc { font-size: 12px; color: #555; margin-bottom: 1rem; line-height: 1.5; }
+        .btn-carta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+            padding: 13px 20px;
+            background: linear-gradient(135deg, #2e7d32, #43a047);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(46,125,50,0.25);
+        }
+        .btn-carta:hover {
+            background: linear-gradient(135deg, #1b5e20, #2e7d32);
+            box-shadow: 0 6px 18px rgba(46,125,50,0.35);
+            transform: translateY(-1px);
+        }
+        .btn-inicio {
+            display: inline-block;
+            margin-top: 0.8rem;
+            padding: 10px 20px;
+            background: transparent;
+            color: #388e3c;
+            text-decoration: none;
+            border: 1.5px solid #a5d6a7;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .btn-inicio:hover { background: #e8f5e9; border-color: #2e7d32; }
+        .nota { font-size: 11px; color: #999; margin-top: 1rem; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="check-circle">✓</div>
+        <h2>¡Registro enviado!</h2>
+        <div class="alumno-nombre">{{ alumno.nombre }}</div>
+        <p class="sub">
+            Tu información fue guardada correctamente en el sistema.<br>
+            No. de cuenta: <strong>{{ alumno.numero_cuenta }}</strong>
+        </p>
+
+        <div class="divider"></div>
+
+        <div class="carta-box">
+            <div class="carta-box-title">📄 Carta de Autorización – Repositorio Institucional UAEMex</div>
+            <div class="carta-box-desc">
+                Tu carta ya está lista con tus datos prellenados (nombre, número de cuenta,
+                tema y carrera). Descárgala, imprímela, fírmala y entrégala junto con tu documentación.
+            </div>
+            <a href="/carta/{{ alumno.id }}/" class="btn-carta" target="_blank">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Descargar Carta de Autorización (PDF prellenado)
+            </a>
+        </div>
+
+        <a href="/" class="btn-inicio">← Volver al inicio</a>
+
+        <p class="nota">
+            La carta debe firmarse de manera autógrafa, digitalizarse y adjuntarse
+            en el depósito del Repositorio Institucional de la UAEMex.
+        </p>
+    </div>
+</body>
+</html>

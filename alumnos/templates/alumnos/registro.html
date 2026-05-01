@@ -1,0 +1,1120 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="shortcut icon" type="image/jpeg" href="{% static 'img/logo.JPG' %}?v=2">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Titulación – {{ facultad_display }} – UAEMex</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+/* ── RESET ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+    --verde:   #2e7d32;
+    --verde2:  #43a047;
+    --verde3:  #1b5e20;
+    --verde4:  #388e3c;
+    --verde-l: #e8f5e9;
+    --verde-m: #a5d6a7;
+    --oro:     #b8973a;
+    --shadow:  0 4px 24px rgba(46,125,50,0.10);
+    --shadow2: 0 12px 48px rgba(46,125,50,0.20);
+    --radius:  16px;
+    --ease:    cubic-bezier(0.22, 1, 0.36, 1);
+}
+html { scroll-behavior: smooth; }
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(160deg, #eef7ee 0%, #f4faf4 40%, #e8f4e8 100%);
+    background-attachment: fixed;
+    color: #212121; min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ── KEYFRAMES ── */
+@keyframes loaderSpin    { to{transform:rotate(360deg);} }
+@keyframes dotBounce     { 0%,100%{transform:translateY(0);opacity:.45;}50%{transform:translateY(-9px);opacity:1;} }
+@keyframes bannerZoom    { 0%{transform:scale(1.00);}50%{transform:scale(1.07);}100%{transform:scale(1.04);} }
+@keyframes slideInLeft   { from{opacity:0;transform:translateX(-40px);}to{opacity:1;transform:translateX(0);} }
+@keyframes fadeScale     { from{opacity:0;transform:scale(0.86);}to{opacity:1;transform:scale(1);} }
+@keyframes fadeUp        { from{opacity:0;transform:translateY(26px);}to{opacity:1;transform:translateY(0);} }
+@keyframes rippleAnim    { to{transform:scale(5);opacity:0;} }
+@keyframes shimmerPass   { 0%{transform:translateX(-120%) skewX(-14deg);}100%{transform:translateX(220%) skewX(-14deg);} }
+@keyframes shimmerBtn    { 0%{left:-80%;}100%{left:130%;} }
+@keyframes spinIcon      { to{transform:rotate(360deg);} }
+@keyframes pulseActive   { 0%,100%{box-shadow:0 0 0 0 rgba(46,125,50,0.35);}50%{box-shadow:0 0 0 8px rgba(46,125,50,0);} }
+@keyframes checkPop      { 0%{transform:scale(0);}70%{transform:scale(1.2);}100%{transform:scale(1);} }
+@keyframes borderGlow    { 0%,100%{box-shadow:0 0 0 3px rgba(46,125,50,0.15);}50%{box-shadow:0 0 0 5px rgba(46,125,50,0.28);} }
+
+/* ── PAGE LOADER ── */
+.page-loader {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(135deg, #1a4d1c 0%, #2e7d32 55%, #388e3c 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+    transition: opacity 0.8s var(--ease), visibility 0.8s;
+}
+.page-loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.loader-center { position: relative; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; }
+.loader-ring  { position: absolute; inset: 0; border: 3px solid rgba(255,255,255,0.14); border-top-color: rgba(255,255,255,0.9); border-right-color: rgba(255,255,255,0.45); border-radius: 50%; animation: loaderSpin 0.9s linear infinite; }
+.loader-ring2 { position: absolute; inset: 9px; border: 2px solid rgba(255,255,255,0.08); border-bottom-color: rgba(255,255,255,0.4); border-radius: 50%; animation: loaderSpin 1.5s linear infinite reverse; }
+.loader-center img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
+.loader-text { color: rgba(255,255,255,0.78); font-size: 11px; font-weight: 600; letter-spacing: 4px; text-transform: uppercase; }
+.loader-dots { display: flex; gap: 7px; }
+.loader-dots span { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.5); animation: dotBounce 1.1s ease-in-out infinite; }
+.loader-dots span:nth-child(2) { animation-delay:.18s; }
+.loader-dots span:nth-child(3) { animation-delay:.36s; }
+
+/* ── SCROLL REVEAL ── */
+.reveal {
+    opacity: 0; transform: translateY(32px);
+    transition: opacity 0.75s var(--ease), transform 0.75s var(--ease);
+}
+.reveal.revealed { opacity: 1 !important; transform: none !important; }
+
+/* ── RIPPLE ── */
+.ripple-host { position: relative; overflow: hidden; }
+.ripple-effect {
+    position: absolute; border-radius: 50%;
+    background: rgba(255,255,255,0.28);
+    transform: scale(0); animation: rippleAnim 0.7s linear;
+    pointer-events: none;
+}
+
+/* ── NAVBAR ── */
+.navbar {
+    width: 100%; background: rgba(255,255,255,0.98);
+    border-bottom: 3px solid var(--verde);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 14px 2rem 0;
+    position: sticky; top: 0; z-index: 500;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+.navbar.glass {
+    background: rgba(255,255,255,0.80);
+    backdrop-filter: blur(22px) saturate(1.9);
+    -webkit-backdrop-filter: blur(22px) saturate(1.9);
+    box-shadow: 0 4px 32px rgba(0,0,0,0.11);
+}
+.navbar-top { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+.navbar-top img { width: 54px; transition: transform 0.35s var(--ease); }
+.navbar-top:hover img { transform: scale(1.07) rotate(-3deg); }
+.navbar-title { font-size: 13px; font-weight: 800; color: var(--verde3); }
+.navbar-sub   { font-size: 11px; color: #888; }
+.navbar-menu  {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    border-top: 1px solid #eee; width: 100%; max-width: 1100px;
+}
+.navbar-menu a {
+    font-size: 12px; color: #555; text-decoration: none;
+    padding: 8px 12px; white-space: nowrap; transition: color .2s;
+    position: relative;
+}
+.navbar-menu a::after {
+    content: ''; position: absolute; bottom: 0; left: 50%; right: 50%;
+    height: 2px; background: var(--verde);
+    transition: left .25s ease, right .25s ease;
+    border-radius: 2px 2px 0 0;
+}
+.navbar-menu a:hover { color: var(--verde); }
+.navbar-menu a:hover::after { left: 12px; right: 12px; }
+.navbar-sep { color: #e0e0e0; padding: 8px 2px; font-size: 11px; }
+
+/* ── BANNER ── */
+.banner {
+    width: 100%; height: 300px;
+    position: relative; overflow: hidden;
+}
+.banner-img {
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: center 40%;
+    display: block;
+    animation: bannerZoom 20s ease-in-out infinite alternate;
+    filter: brightness(0.72) saturate(1.1);
+    will-change: transform;
+}
+.banner-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to right,
+        rgba(8,46,8,0.78) 0%,
+        rgba(12,55,12,0.42) 55%,
+        rgba(0,0,0,0.18) 100%
+    );
+}
+.banner-content {
+    position: absolute; inset: 0;
+    display: flex; align-items: center;
+    padding: 0 3.5rem; gap: 1.6rem;
+}
+.banner-logo {
+    width: 84px; height: 84px; flex-shrink: 0;
+    background: rgba(255,255,255,0.11);
+    border: 2px solid rgba(255,255,255,0.28);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.28);
+    animation: fadeScale 0.7s var(--ease) 0.2s both;
+}
+.banner-logo img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; }
+.banner-text { display: flex; flex-direction: column; gap: 5px; }
+.banner-univ {
+    font-size: clamp(16px, 2.8vw, 24px); font-weight: 900; color: #fff;
+    letter-spacing: 0.4px; line-height: 1.15;
+    text-shadow: 0 2px 14px rgba(0,0,0,0.45);
+    animation: slideInLeft 0.75s var(--ease) 0.4s both;
+}
+.banner-fac {
+    font-size: clamp(11px, 1.5vw, 14px);
+    color: #b9f6ca; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 2px;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.3);
+    animation: slideInLeft 0.75s var(--ease) 0.6s both;
+}
+.banner-caption { position: absolute; bottom: 10px; right: 18px; font-size: 10px; color: rgba(255,255,255,0.38); font-style: italic; }
+
+/* ── BREADCRUMB ── */
+.breadcrumb {
+    width: 100%;
+    background: linear-gradient(90deg, var(--verde3), var(--verde4));
+    padding: 0.6rem 2rem;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: #e8f5e9;
+}
+.breadcrumb a { color: rgba(255,255,255,0.72); text-decoration: none; transition: color .2s; }
+.breadcrumb a:hover { color: #fff; }
+.breadcrumb b { color: #fff; font-weight: 600; }
+.breadcrumb span { opacity: 0.5; }
+
+/* ── PROGRESS BAR ── */
+.progress-wrap {
+    width: 100%;
+    background: rgba(255,255,255,0.72);
+    border-bottom: 1px solid #c8e6c9;
+    display: flex; justify-content: center; align-items: center;
+    padding: 0.75rem 2rem; gap: 0;
+    position: sticky; top: 88px; z-index: 100;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 2px 12px rgba(46,125,50,0.08);
+}
+.progress-track {
+    position: absolute; left: 0; right: 0; top: 50%;
+    height: 2px; background: #c8e6c9; z-index: 0;
+    pointer-events: none;
+}
+.progress-fill {
+    height: 100%; width: 0%; background: linear-gradient(90deg, var(--verde3), var(--verde2));
+    transition: width 0.5s var(--ease); border-radius: 2px;
+    box-shadow: 0 0 8px rgba(46,125,50,0.4);
+}
+.step-dot {
+    display: flex; align-items: center; flex-direction: column; gap: 4px;
+    position: relative; z-index: 1;
+}
+.step-dot-inner {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #fff; color: #aaa;
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.4s var(--ease);
+    border: 2px solid #c8e6c9;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.step-dot-inner.active {
+    background: var(--verde); color: #fff;
+    border-color: var(--verde);
+    box-shadow: 0 0 0 4px rgba(46,125,50,0.18);
+    animation: pulseActive 2.5s ease-in-out infinite;
+    transform: scale(1.18);
+}
+.step-dot-inner.done {
+    background: var(--verde2); color: #fff;
+    border-color: var(--verde2);
+    transform: scale(1.05);
+}
+.step-dot-inner.done::after {
+    content: '✓'; font-size: 13px; font-weight: 900;
+    animation: checkPop 0.35s var(--ease);
+}
+.step-label {
+    font-size: 10px; color: #999; font-weight: 500;
+    white-space: nowrap; transition: color 0.3s;
+}
+.step-dot-inner.active ~ .step-label { color: var(--verde); font-weight: 700; }
+.step-connector {
+    width: 50px; height: 2px; background: transparent;
+    margin: 0 3px; position: relative; z-index: 1;
+    margin-bottom: 14px;
+}
+
+/* ── LAYOUT ── */
+.main-wrapper {
+    max-width: 840px; margin: 0 auto;
+    padding: 2.2rem 1.5rem 3.5rem;
+    display: flex; flex-direction: column; gap: 1.5rem;
+}
+
+/* ── AVISO ── */
+.aviso {
+    background: linear-gradient(135deg, rgba(232,245,232,0.95), rgba(241,253,243,0.98));
+    border-left: 4px solid var(--verde);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.4rem;
+    font-size: 13px; color: var(--verde3); line-height: 1.68;
+    box-shadow: var(--shadow);
+    display: flex; gap: 12px; align-items: flex-start;
+    border: 1px solid rgba(46,125,50,0.12);
+    border-left: 4px solid var(--verde);
+    backdrop-filter: blur(4px);
+    animation: fadeUp 0.5s var(--ease) 0.1s both;
+}
+.aviso-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+.aviso strong { display: block; font-size: 14px; margin-bottom: 3px; }
+
+/* ── FORM CARDS ── */
+.form-card {
+    background: rgba(255,255,255,0.96);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.85);
+    opacity: 0; transform: translateY(28px);
+    transition: opacity 0.7s var(--ease), transform 0.7s var(--ease), box-shadow 0.35s ease;
+    will-change: opacity, transform;
+}
+.form-card.revealed {
+    opacity: 1; transform: translateY(0);
+}
+.form-card:hover {
+    box-shadow: 0 14px 52px rgba(46,125,50,0.16);
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--verde3) 0%, var(--verde4) 60%, var(--verde2) 100%);
+    background-size: 200% 200%;
+    padding: 0.9rem 1.5rem;
+    display: flex; align-items: center; gap: 12px;
+    position: relative; overflow: hidden;
+}
+.card-header::after {
+    content: ''; position: absolute;
+    top: 0; left: -80%; width: 55%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transform: skewX(-14deg); pointer-events: none;
+}
+.form-card:hover .card-header::after { animation: shimmerPass 0.8s ease; }
+.card-header-num {
+    width: 30px; height: 30px; flex-shrink: 0;
+    background: rgba(255,255,255,0.18);
+    border: 1.5px solid rgba(255,255,255,0.38);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; color: #fff;
+}
+.card-header-title {
+    font-size: 13px; font-weight: 700; color: #fff;
+    text-transform: uppercase; letter-spacing: 1.2px;
+}
+.card-body { padding: 1.5rem; }
+
+/* ── FORM GRID ── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+.form-group { display: flex; flex-direction: column; gap: 5px; position: relative; }
+.form-group.full { grid-column: 1 / -1; }
+.field-label {
+    font-size: 11px; font-weight: 700; color: var(--verde);
+    text-transform: uppercase; letter-spacing: 0.8px;
+}
+.field-num { font-size: 10.5px; color: #81c784; font-weight: 500; }
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    border: 1.5px solid #c8e6c9;
+    border-radius: 10px;
+    padding: 0 14px;
+    font-size: 14px; color: #212121;
+    background: #f8fef9;
+    font-family: inherit;
+    height: 44px; outline: none;
+    transition: border-color .25s, box-shadow .25s, background .25s, transform .15s;
+    -webkit-appearance: none;
+}
+.form-group textarea { height: auto; padding: 12px 14px; resize: vertical; }
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: var(--verde);
+    background: #fff;
+    box-shadow: 0 0 0 3.5px rgba(46,125,50,0.14), 0 2px 10px rgba(46,125,50,0.09);
+    transform: translateY(-1px);
+}
+.form-group input:hover:not(:focus),
+.form-group select:hover:not(:focus) {
+    border-color: var(--verde-m);
+    background: #fff;
+}
+.form-group select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%232e7d32' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+/* ── UPLOAD ZONES ── */
+.upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
+.upload-grid.single { grid-template-columns: 1fr 1fr; }
+.file-zone {
+    border: 2px dashed #81c784;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #f4fef5, #edf8ee);
+    padding: 1.5rem 1rem;
+    text-align: center; cursor: pointer;
+    position: relative;
+    transition: all .3s var(--ease);
+}
+.file-zone:hover {
+    border-color: var(--verde);
+    background: linear-gradient(135deg, #e8f5e9, #d4edda);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 24px rgba(46,125,50,0.14);
+    animation: borderGlow 2s ease-in-out infinite;
+}
+.file-zone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0;
+    cursor: pointer; width: 100%; height: 100%;
+    border: none; box-shadow: none; background: transparent;
+    z-index: 2; transform: none; transition: none;
+}
+.file-zone-icon  { font-size: 28px; margin-bottom: 7px; }
+.file-zone-label { font-size: 13px; color: var(--verde); font-weight: 700; }
+.file-zone-hint  { font-size: 11px; color: #81c784; margin-top: 4px; line-height: 1.5; }
+.file-zone-num   { font-size: 11px; color: var(--verde3); font-weight: 700; margin-bottom: 7px; }
+.file-zone-name  { font-size: 12px; color: var(--verde3); margin-top: 7px; font-weight: 600; min-height: 16px; transition: all .2s; }
+.file-zone.has-file {
+    border-color: var(--verde); border-style: solid;
+    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    box-shadow: 0 4px 18px rgba(46,125,50,0.14);
+}
+.file-zone.drag-over {
+    border-color: var(--verde2); border-style: solid;
+    background: linear-gradient(135deg, #e0f2e0, #c8e6c9);
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 8px 28px rgba(46,125,50,0.2);
+}
+
+/* ── TÉRMINOS ── */
+.terminos-card {
+    background: linear-gradient(135deg, #f9fefb, #f2fef3);
+    border: 1.5px solid #c8e6c9;
+    border-radius: 14px; padding: 1.4rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+.terminos-card:hover { border-color: var(--verde-m); box-shadow: 0 4px 20px rgba(46,125,50,0.08); }
+.terminos-title {
+    font-size: 13px; font-weight: 700; color: var(--verde3);
+    margin-bottom: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;
+    display: flex; align-items: center; gap: 7px;
+}
+.terminos-card ol {
+    font-size: 12.5px; color: #555; line-height: 1.88;
+    padding-left: 1.4rem; margin-bottom: 1.2rem;
+}
+.terminos-card ol li { margin-bottom: 0.35rem; }
+.checkbox-row {
+    display: flex; align-items: center; gap: 12px;
+    padding-top: 0.8rem; border-top: 1px solid #c8e6c9;
+}
+.checkbox-row input[type="checkbox"] {
+    width: 22px; height: 22px;
+    accent-color: var(--verde); cursor: pointer; flex-shrink: 0;
+    transform: scale(1.1); border-radius: 5px;
+    transition: transform 0.2s;
+    border: none; box-shadow: none; background: transparent; height: auto; padding: 0;
+}
+.checkbox-row label { font-size: 13px; font-weight: 600; color: var(--verde3); cursor: pointer; line-height: 1.5; }
+
+/* ── ERRORES ── */
+.errorlist { list-style: none; margin-top: 5px; }
+.errorlist li {
+    background: #ffebee; border: 0.5px solid #ef9a9a;
+    border-radius: 8px; padding: 8px 13px;
+    font-size: 12px; color: #c62828; margin-bottom: 3px;
+    animation: fadeUp 0.3s ease;
+}
+
+/* ── BOTÓN SUBMIT ── */
+.btn-submit-wrap { position: relative; margin-top: 1.5rem; }
+.btn-submit {
+    width: 100%; height: 56px;
+    background: linear-gradient(135deg, var(--verde3) 0%, var(--verde4) 50%, var(--verde2) 100%);
+    background-size: 200% 200%;
+    color: #fff; border: none;
+    border-radius: 12px; font-size: 15px; font-weight: 700;
+    font-family: inherit; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: transform 0.3s var(--ease), box-shadow 0.3s ease, opacity 0.3s;
+    box-shadow: 0 6px 24px rgba(46,125,50,0.32), 0 2px 8px rgba(46,125,50,0.2);
+    position: relative; overflow: hidden;
+    letter-spacing: 0.3px;
+}
+.btn-submit::before {
+    content: ''; position: absolute;
+    top: 0; left: -80%; width: 50%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    transform: skewX(-14deg); pointer-events: none;
+}
+.btn-submit:hover::before { animation: shimmerBtn 0.65s ease; }
+.btn-submit:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 36px rgba(46,125,50,0.42), 0 4px 14px rgba(46,125,50,0.25);
+}
+.btn-submit:active { transform: translateY(-1px); }
+.btn-submit:disabled { opacity: 0.75; cursor: not-allowed; transform: none; }
+.btn-submit-text { display: flex; align-items: center; gap: 10px; }
+.btn-submit-loading { display: none; align-items: center; gap: 10px; }
+.spin-svg { animation: loaderSpin 0.8s linear infinite; }
+
+/* ── FOOTER NOTE ── */
+.footer-note { text-align: center; font-size: 11px; color: #aaa; padding: 0.5rem 0 1rem; }
+
+/* ── FOOTER CONTACTO ── */
+.footer-contacto {
+    width: 100%;
+    background: linear-gradient(180deg, #fff 0%, #f6fbf6 100%);
+    border-top: 2px solid #d4c27a;
+    font-family: 'Inter', sans-serif;
+    margin-top: 1rem;
+}
+.f-col { display: flex; flex-direction: column; gap: 0.9rem; }
+.map-wrap { border-radius: 10px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.09); }
+.map-wrap iframe { display: block; }
+.s-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    text-decoration: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+    transition: transform 0.3s var(--ease), box-shadow 0.3s;
+}
+.s-btn:hover { transform: translateY(-4px) scale(1.12); box-shadow: 0 8px 20px rgba(0,0,0,0.22); }
+
+/* ── RESPONSIVE ── */
+/* ══ RESPONSIVE ══ */
+
+/* Tablet */
+@media (max-width: 860px) {
+    .main-wrapper { max-width: 100%; padding: 1.5rem 1.2rem 3rem; }
+    .form-grid    { gap: 1rem; }
+}
+
+/* Mobile grande */
+@media (max-width: 680px) {
+    /* Navbar */
+    .navbar { padding: 10px 1rem 0; }
+    .navbar-top img   { width: 40px; }
+    .navbar-title     { font-size: 11.5px; line-height: 1.3; }
+    .navbar-sub       { font-size: 9.5px; }
+    .navbar-top       { gap: 10px; margin-bottom: 8px; }
+    .navbar-menu {
+        overflow-x: auto; flex-wrap: nowrap;
+        justify-content: flex-start;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; padding-bottom: 1px;
+    }
+    .navbar-menu::-webkit-scrollbar { display: none; }
+    .navbar-menu a    { font-size: 11px; padding: 7px 9px; white-space: nowrap; }
+    .navbar-sep       { padding: 7px 2px; }
+
+    /* Banner */
+    .banner { height: 190px; }
+    .banner-content { padding: 0 1.4rem; gap: 1rem; }
+    .banner-logo { width: 62px; height: 62px; }
+    .banner-logo img { width: 50px; height: 50px; }
+    .banner-univ { font-size: 16px; }
+    .banner-fac  { font-size: 11px; letter-spacing: 1px; }
+    .banner-caption { display: none; }
+
+    /* Breadcrumb */
+    .breadcrumb { font-size: 11px; padding: 0.5rem 1rem; flex-wrap: wrap; gap: 5px; }
+
+    /* Progreso */
+    .progress-wrap { top: 76px; padding: 0.5rem 1rem; }
+    .step-connector { width: 28px; }
+    .step-dot-inner { width: 26px; height: 26px; font-size: 10px; }
+    .step-label { font-size: 9px; }
+
+    /* Form */
+    .main-wrapper { padding: 1rem 0.9rem 2.5rem; gap: 1.1rem; }
+    .form-grid    { grid-template-columns: 1fr; gap: 0.9rem; }
+    .form-group.full { grid-column: 1; }
+    .card-body    { padding: 1.1rem; }
+    .card-header  { padding: 0.75rem 1.1rem; }
+    .card-header-title { font-size: 12px; }
+    .form-card    { border-radius: 12px; }
+    .form-group input,
+    .form-group select { height: 42px; font-size: 13.5px; }
+
+    /* Uploads */
+    .upload-grid  { grid-template-columns: 1fr; }
+    .file-zone    { padding: 1.2rem 1rem; }
+
+    /* Términos */
+    .terminos-card ol { font-size: 12px; }
+    .terminos-card { padding: 1.1rem; }
+
+    /* Aviso */
+    .aviso { font-size: 12.5px; padding: 0.9rem 1.1rem; }
+
+    /* Submit */
+    .btn-submit   { height: 50px; font-size: 14px; }
+
+    /* Footer */
+    .footer-contacto > div[style*="grid"] {
+        grid-template-columns: 1fr !important;
+        padding: 0.5rem 1.2rem 1.5rem !important;
+    }
+}
+
+/* Mobile pequeño */
+@media (max-width: 420px) {
+    .banner { height: 160px; }
+    .banner-logo { width: 52px; height: 52px; }
+    .banner-logo img { width: 42px; height: 42px; }
+    .banner-univ { font-size: 14px; }
+    .banner-fac  { display: none; }
+    .progress-wrap { padding: 0.45rem 0.7rem; }
+    .step-connector { width: 18px; }
+    .step-label { display: none; }
+    .step-dot-inner { width: 24px; height: 24px; font-size: 9.5px; }
+    .main-wrapper { padding: 0.8rem 0.7rem 2rem; }
+    .card-body  { padding: 0.9rem; }
+    .navbar-title { font-size: 10.5px; }
+}
+    </style>
+</head>
+<body>
+
+<!-- ══ PAGE LOADER ══ -->
+<div class="page-loader" id="pageLoader">
+    <div class="loader-center">
+        <div class="loader-ring"></div>
+        <div class="loader-ring2"></div>
+        <img src="{% static 'img/logo.JPG' %}" alt="UAEMex">
+    </div>
+    <div class="loader-text">Cargando formulario</div>
+    <div class="loader-dots"><span></span><span></span><span></span></div>
+</div>
+
+<!-- ══ NAVBAR ══ -->
+<nav class="navbar" id="mainNav">
+    <div class="navbar-top">
+        <img src="{% static 'img/logo.JPG' %}" alt="UAEMex">
+        <div>
+            <div class="navbar-title">Universidad Autónoma del Estado de México</div>
+            <div class="navbar-sub">Sistema de Registro de Protocolo de Titulación</div>
+        </div>
+    </div>
+    <div class="navbar-menu">
+        <a href="#">Mi Universidad <span style="font-size:9px;opacity:.5;">▾</span></a>
+        <span class="navbar-sep">|</span>
+        <a href="#">Oferta Educativa <span style="font-size:9px;opacity:.5;">▾</span></a>
+        <span class="navbar-sep">|</span>
+        <a href="#">Vida Universitaria <span style="font-size:9px;opacity:.5;">▾</span></a>
+        <span class="navbar-sep">|</span>
+        <a href="#">Seguridad Institucional <span style="font-size:9px;opacity:.5;">▾</span></a>
+        <span class="navbar-sep">|</span>
+        <a href="#">UAEMéx Virtual <span style="font-size:9px;opacity:.5;">▾</span></a>
+        <span class="navbar-sep">|</span>
+        <a href="#">UAEMéx Internacional</a>
+        <span class="navbar-sep">|</span>
+        <a href="#">Transparencia</a>
+    </div>
+</nav>
+
+<!-- ══ BANNER ══ -->
+<div class="banner">
+    <img src="{% static 'img/carrusel.jpg' %}" alt="UAEMex" class="banner-img">
+    <div class="banner-overlay"></div>
+    <div class="banner-content">
+        <div class="banner-logo">
+            <img src="{% static 'img/logo.JPG' %}" alt="UAEMex">
+        </div>
+        <div class="banner-text">
+            <div class="banner-univ">Universidad Autónoma del Estado de México</div>
+            <div class="banner-fac">{{ facultad_display }} – Biblioteca de Medicina y Química</div>
+        </div>
+    </div>
+    <div class="banner-caption">Patria, Ciencia y Trabajo</div>
+</div>
+
+<!-- ══ BREADCRUMB ══ -->
+<div class="breadcrumb">
+    <a href="/">← Cambiar facultad</a>
+    <span>›</span>
+    <b>Trámite de Titulación</b>
+    <span>›</span>
+    <b>Registro de Protocolo</b>
+</div>
+
+<!-- ══ PROGRESO ══ -->
+<div class="progress-wrap" id="progressBar">
+    <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="step-dot">
+        <div class="step-dot-inner active" id="s1">1</div>
+        <span class="step-label">Personal</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-dot">
+        <div class="step-dot-inner" id="s2">2</div>
+        <span class="step-label">Académico</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-dot">
+        <div class="step-dot-inner" id="s3">3</div>
+        <span class="step-label">Documentos</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-dot">
+        <div class="step-dot-inner" id="s4">4</div>
+        <span class="step-label">Términos</span>
+    </div>
+</div>
+
+<!-- ══ CONTENIDO ══ -->
+<div class="main-wrapper">
+
+    <div class="aviso">
+        <span class="aviso-icon">📋</span>
+        <div>
+            <strong>INSTRUCCIONES</strong>
+            Lea cada apartado y escriba los datos solicitados. Su información es estrictamente
+            confidencial y se usa únicamente para fines de Registro de Protocolo de Titulación.
+        </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" id="mainForm">
+        {% csrf_token %}
+
+        <!-- ── SECCIÓN 1: Datos personales ── -->
+        <div class="form-card" id="sec1">
+            <div class="card-header">
+                <div class="card-header-num">1</div>
+                <div class="card-header-title">👤 Datos personales</div>
+            </div>
+            <div class="card-body">
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <span class="field-num">1. Nombre completo del alumno</span>
+                        <span class="field-label">Empezando por apellidos en mayúsculas</span>
+                        {{ form.nombre }}
+                        {{ form.nombre.errors }}
+                    </div>
+                    <div class="form-group">
+                        <span class="field-num">2. Número de cuenta</span>
+                        <span class="field-label">No. de Cuenta</span>
+                        {{ form.numero_cuenta }}
+                        {{ form.numero_cuenta.errors }}
+                    </div>
+                    <div class="form-group">
+                        <span class="field-num">3. Correo electrónico</span>
+                        <span class="field-label">Correo institucional</span>
+                        {{ form.correo }}
+                        {{ form.correo.errors }}
+                    </div>
+                    <div class="form-group">
+                        <span class="field-num">4. Teléfono</span>
+                        <span class="field-label">Número de contacto</span>
+                        {{ form.telefono }}
+                        {{ form.telefono.errors }}
+                    </div>
+                    <div class="form-group">
+                        <span class="field-num">Semestre</span>
+                        <span class="field-label">Semestre actual</span>
+                        {{ form.semestre }}
+                        {{ form.semestre.errors }}
+                    </div>
+                    <div class="form-group full">
+                        <span class="field-num">5. Domicilio</span>
+                        <span class="field-label">Calle, colonia, municipio, C.P.</span>
+                        {{ form.domicilio }}
+                        {{ form.domicilio.errors }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── SECCIÓN 2: Datos académicos ── -->
+        <div class="form-card" id="sec2">
+            <div class="card-header">
+                <div class="card-header-num">2</div>
+                <div class="card-header-title">🎓 Datos académicos</div>
+            </div>
+            <div class="card-body">
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <span class="field-num">6. Licenciatura</span>
+                        <span class="field-label">Seleccione la licenciatura a la que pertenece</span>
+                        {{ form.carrera }}
+                        {{ form.carrera.errors }}
+                    </div>
+                    <div class="form-group full">
+                        <span class="field-num">7. Modalidad de Evaluación Profesional</span>
+                        <span class="field-label">Seleccione su modalidad</span>
+                        {{ form.modalidad }}
+                        {{ form.modalidad.errors }}
+                    </div>
+                    <div class="form-group full">
+                        <span class="field-num">8. Tema del trabajo escrito</span>
+                        <span class="field-label">Escriba en letra mayúscula</span>
+                        {{ form.tema }}
+                        {{ form.tema.errors }}
+                    </div>
+                    <div class="form-group full">
+                        <span class="field-num">9. Grado académico</span>
+                        <span class="field-label">Grado académico</span>
+                        {{ form.director }}
+                        {{ form.director.errors }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── SECCIÓN 3: Documentos ── -->
+        <div class="form-card" id="sec3">
+            <div class="card-header">
+                <div class="card-header-num">3</div>
+                <div class="card-header-title">📄 Documentos</div>
+            </div>
+            <div class="card-body">
+                <div class="upload-grid {% if facultad == 'QUIMICA' %}single{% endif %}">
+                    <div class="form-group">
+                        <div class="file-zone" id="zone1">
+                            {{ form.documento1 }}
+                            <div class="file-zone-icon">📄</div>
+                            <div class="file-zone-num">Documento 1</div>
+                            <div class="file-zone-label">Portada de Protocolo</div>
+                            <div class="file-zone-hint">PDF · NombreCompleto-F1<br>Máx. 10 MB</div>
+                            <div class="file-zone-name" id="fname1"></div>
+                        </div>
+                        {{ form.documento1.errors }}
+                    </div>
+                    <div class="form-group">
+                        <div class="file-zone" id="zone2">
+                            {{ form.documento2 }}
+                            <div class="file-zone-icon">📄</div>
+                            <div class="file-zone-num">Documento 2</div>
+                            <div class="file-zone-label">Modalidad de Titulación</div>
+                            <div class="file-zone-hint">PDF · NombreCompleto-F2<br>Máx. 10 MB</div>
+                            <div class="file-zone-name" id="fname2"></div>
+                        </div>
+                        {{ form.documento2.errors }}
+                    </div>
+                    {% if facultad != 'QUIMICA' %}
+                    <div class="form-group">
+                        <div class="file-zone" id="zone3">
+                            {{ form.documento3 }}
+                            <div class="file-zone-icon">📎</div>
+                            <div class="file-zone-num">Documento 3 (opcional)</div>
+                            <div class="file-zone-label">Archivo complementario</div>
+                            <div class="file-zone-hint">PDF / Word<br>Máx. 10 MB</div>
+                            <div class="file-zone-name" id="fname3"></div>
+                        </div>
+                        {{ form.documento3.errors }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- ── SECCIÓN 4: Términos ── -->
+        <div class="form-card" id="sec4">
+            <div class="card-header">
+                <div class="card-header-num">4</div>
+                <div class="card-header-title">✅ Términos y condiciones</div>
+            </div>
+            <div class="card-body">
+                <div class="terminos-card">
+                    <div class="terminos-title">
+                        <span>📜</span>
+                        Al enviar, el PASANTE confirma que conoce:
+                    </div>
+                    <ol>
+                        <li>El pasante se compromete a entregar de manera presencial el formato de evaluación profesional, debidamente firmado a la Subdirección Académica para su autorización, adjuntando la impresión de la portada del trabajo con la firma autógrafa del Director que eligió para su modalidad.</li>
+                        <li>Una vez registrado el trabajo escrito, el tema o la opción de evaluación profesional sólo podrán cambiarse a petición del pasante(s) y con la aprobación del Director, con oficio dirigido al Departamento de Evaluación Profesional exponiendo los argumentos para el cambio del mismo.</li>
+                        <li>Una vez aceptado el trabajo escrito, el pasante tendrá un año de vigencia; en caso de vencimiento tendrá que realizar un nuevo registro.</li>
+                    </ol>
+                    <div class="checkbox-row">
+                        {{ form.acepta_terminos }}
+                        <label for="{{ form.acepta_terminos.id_for_label }}">
+                            Entiendo y acepto los términos y condiciones
+                        </label>
+                    </div>
+                    {{ form.acepta_terminos.errors }}
+                </div>
+
+                {% if form.non_field_errors %}
+                    {% for error in form.non_field_errors %}
+                        <div style="background:#ffebee;border:0.5px solid #ef9a9a;border-radius:10px;padding:11px 15px;font-size:13px;color:#c62828;margin-top:1rem;animation:fadeUp .3s ease;">
+                            ⚠ {{ error }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <div class="btn-submit-wrap">
+                    <button type="submit" class="btn-submit ripple-host" id="submitBtn">
+                        <span class="btn-submit-text">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M3 10.5L8 15.5L17 5.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Enviar registro
+                        </span>
+                        <span class="btn-submit-loading">
+                            <svg class="spin-svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <circle cx="10" cy="10" r="8" stroke="rgba(255,255,255,0.3)" stroke-width="2.5"/>
+                                <path d="M10 2a8 8 0 018 8" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                            </svg>
+                            Enviando...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </form>
+
+    <div class="footer-note">
+        Sistema de Trámite de Titulación &middot; {{ facultad_display }} &middot; UAEMex 2026
+    </div>
+</div>
+
+<!-- ══ FOOTER ══ -->
+<footer class="footer-contacto">
+    <div style="text-align:center;padding:2rem 0 1rem;">
+        <svg width="54" height="46" viewBox="0 0 80 65" fill="none">
+            <path d="M40 5 C30 5 22 13 22 22 C22 31 30 38 40 42 C50 38 58 31 58 22 C58 13 50 5 40 5Z" fill="#4a7c3f"/>
+            <path d="M25 28 C15 25 10 32 14 40 C18 48 28 48 35 44" fill="#4a7c3f"/>
+            <path d="M55 28 C65 25 70 32 66 40 C62 48 52 48 45 44" fill="#4a7c3f"/>
+            <path d="M30 42 C25 50 28 58 35 60 C40 62 45 60 50 58 C57 55 58 48 55 42" fill="#b8973a"/>
+            <path d="M35 44 C33 52 36 60 40 61 C44 60 47 52 45 44" fill="#b8973a"/>
+        </svg>
+        <div style="font-size:12px;font-weight:800;letter-spacing:3px;color:#4a7c3f;margin-top:4px;">CONTÁCTANOS</div>
+        <div style="width:80%;height:1px;background:linear-gradient(to right,transparent,#b8a96a,transparent);margin:.7rem auto;"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;max-width:1100px;margin:0 auto;padding:0.5rem 2.5rem 2rem;">
+        <div class="f-col">
+            <div class="map-wrap">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3762.4!2d-99.6567!3d19.2827!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85cd890b7e7e7e7f%3A0x1!2sFacultad+de+Medicina+UAEMex!5e0!3m2!1ses!2smx!4v1"
+                    width="100%" height="150" style="border:0;display:block;" allowfullscreen="" loading="lazy"></iframe>
+            </div>
+            <p style="font-size:11px;color:#555;line-height:1.7;">📍 Av Paseo Tollocan, C. Jesús Carranza,<br>Moderna de la Cruz, Toluca C.P. 50180</p>
+            <p style="font-size:11px;color:#555;line-height:1.7;">📍 Instituto Literario # 100. C.P. 50000 Col. Centro</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:1rem;justify-content:center;padding-left:.5rem;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:38px;height:38px;background:linear-gradient(135deg,#2e7d32,#43a047);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,125,50,0.28);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+                </div>
+                <span style="font-size:12px;color:#333;">+52 722 270 2899</span>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+                <div style="width:38px;height:38px;background:linear-gradient(135deg,#2e7d32,#43a047);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(46,125,50,0.28);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+                </div>
+                <div style="font-size:11.5px;color:#333;line-height:1.75;">
+                    <strong>722 226 23 00 – Interior</strong><br>
+                    011 52 722 226 23 00 – USA y Canadá<br>
+                    00 52 722 226 23 00 – Europa
+                </div>
+            </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.9rem;">
+            <div style="display:flex;gap:9px;flex-wrap:wrap;">
+                <a href="https://facebook.com/uaemex" target="_blank" class="s-btn" style="background:#1877f2;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+                </a>
+                <a href="https://tiktok.com/@uaemex" target="_blank" class="s-btn" style="background:#000;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.75a4.85 4.85 0 01-1.01-.06z"/></svg>
+                </a>
+                <a href="https://instagram.com/uaemex" target="_blank" class="s-btn" style="background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fd5949 45%,#d6249f 60%,#285AEB 90%);">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><rect x="2" y="2" width="20" height="20" rx="5" fill="none" stroke="white" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="white" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.5" fill="white"/></svg>
+                </a>
+                <a href="https://youtube.com/uaemex" target="_blank" class="s-btn" style="background:#ff0000;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 00-1.95 1.96A29 29 0 001 12a29 29 0 00.46 5.58A2.78 2.78 0 003.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="#ff0000"/></svg>
+                </a>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:38px;height:38px;background:linear-gradient(135deg,#2e7d32,#43a047);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,125,50,0.28);">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+                </div>
+                <span style="font-size:12px;color:#333;">rectoria@uaemex.mx</span>
+            </div>
+            <div style="border:1px solid #e8e8e8;border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#fafffe,#f0faf0);">
+                <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
+                    <circle cx="20" cy="20" r="4" fill="#4a7c3f"/>
+                    <circle cx="20" cy="20" r="10" fill="none" stroke="#4a7c3f" stroke-width="1.5" stroke-dasharray="3 2"/>
+                    <circle cx="20" cy="20" r="16" fill="none" stroke="#b8973a" stroke-width="1" stroke-dasharray="2 3"/>
+                </svg>
+                <div>
+                    <div style="font-size:10px;font-weight:800;color:#4a7c3f;letter-spacing:1px;">DTIC</div>
+                    <div style="font-size:8.5px;color:#888;line-height:1.4;">Dirección de Tecnologías<br>de la Información</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div style="width:80%;height:1px;background:linear-gradient(to right,transparent,#b8a96a,transparent);margin:.4rem auto;"></div>
+    <div style="text-align:center;padding:.8rem 0 1.5rem;">
+        <svg width="46" height="38" viewBox="0 0 80 65" fill="none">
+            <path d="M40 5 C30 5 22 13 22 22 C22 31 30 38 40 42 C50 38 58 31 58 22 C58 13 50 5 40 5Z" fill="#4a7c3f"/>
+            <path d="M25 28 C15 25 10 32 14 40 C18 48 28 48 35 44" fill="#4a7c3f"/>
+            <path d="M55 28 C65 25 70 32 66 40 C62 48 52 48 45 44" fill="#4a7c3f"/>
+            <path d="M30 42 C25 50 28 58 35 60 C40 62 45 60 50 58 C57 55 58 48 55 42" fill="#b8973a"/>
+            <path d="M35 44 C33 52 36 60 40 61 C44 60 47 52 45 44" fill="#b8973a"/>
+        </svg>
+        <div style="font-size:11px;font-weight:800;letter-spacing:2px;color:#4a7c3f;margin-top:3px;">ADMINISTRACIÓN UNIVERSITARIA</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:3px;">
+            <div style="height:1px;width:50px;background:linear-gradient(to right,transparent,#b8a96a);"></div>
+            <span style="font-size:11px;color:#b8a96a;font-weight:600;">2025 – 2029</span>
+            <div style="height:1px;width:50px;background:linear-gradient(to left,transparent,#b8a96a);"></div>
+        </div>
+    </div>
+</footer>
+
+<script>
+// ── Loader ──
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        var l = document.getElementById('pageLoader');
+        if (l) l.classList.add('hidden');
+    }, 900);
+});
+
+// ── Navbar glass ──
+var nav = document.getElementById('mainNav');
+window.addEventListener('scroll', function() {
+    nav.classList.toggle('glass', window.scrollY > 60);
+}, {passive: true});
+
+// ── Scroll Reveal para form-cards ──
+var cardObs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+        if (e.isIntersecting) {
+            e.target.classList.add('revealed');
+            cardObs.unobserve(e.target);
+        }
+    });
+}, {threshold: 0.08, rootMargin: '0px 0px -20px 0px'});
+document.querySelectorAll('.form-card').forEach(function(card, i) {
+    card.style.transitionDelay = (i * 0.08) + 's';
+    cardObs.observe(card);
+});
+
+// ── Progreso por scroll ──
+var sections = [
+    {el: document.getElementById('sec1'), dot: document.getElementById('s1')},
+    {el: document.getElementById('sec2'), dot: document.getElementById('s2')},
+    {el: document.getElementById('sec3'), dot: document.getElementById('s3')},
+    {el: document.getElementById('sec4'), dot: document.getElementById('s4')},
+];
+function updateProgress() {
+    var scrollY = window.scrollY + 180;
+    var activeCount = 0;
+    sections.forEach(function(s, i) {
+        if (!s.el) return;
+        var top = s.el.getBoundingClientRect().top + window.scrollY;
+        if (scrollY >= top) {
+            activeCount = i + 1;
+            s.dot.classList.add('active');
+            s.dot.classList.remove('done');
+        } else {
+            s.dot.classList.remove('active');
+        }
+    });
+    // Mark previous steps as done
+    sections.forEach(function(s, i) {
+        if (i < activeCount - 1) {
+            s.dot.classList.remove('active');
+            s.dot.classList.add('done');
+            s.dot.textContent = '✓';
+        } else if (i >= activeCount) {
+            s.dot.classList.remove('done');
+            if (!s.dot.classList.contains('active')) s.dot.textContent = i + 1;
+        }
+    });
+    // Fill progress line
+    var fill = document.getElementById('progressFill');
+    if (fill) {
+        var pct = activeCount <= 1 ? 0 : ((activeCount - 1) / (sections.length - 1)) * 100;
+        fill.style.width = pct + '%';
+    }
+}
+window.addEventListener('scroll', updateProgress, {passive: true});
+updateProgress();
+
+// ── File zones ──
+document.querySelectorAll('.file-zone').forEach(function(zone) {
+    var input   = zone.querySelector('input[type="file"]');
+    var nameDiv = zone.querySelector('.file-zone-name');
+    var hint    = zone.querySelector('.file-zone-hint');
+    if (!input) return;
+    input.addEventListener('change', function() {
+        if (this.files[0]) {
+            nameDiv.textContent = '✓ ' + this.files[0].name;
+            nameDiv.style.color = '#1b5e20';
+            zone.classList.add('has-file');
+            if (hint) hint.style.display = 'none';
+        } else {
+            nameDiv.textContent = '';
+            zone.classList.remove('has-file');
+            if (hint) hint.style.display = '';
+        }
+    });
+    // Drag-over effects
+    zone.addEventListener('dragover',  function(e) { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', function()  { zone.classList.remove('drag-over'); });
+    zone.addEventListener('drop',      function(e) {
+        e.preventDefault(); zone.classList.remove('drag-over');
+        if (e.dataTransfer.files[0] && input) {
+            try {
+                var dt = new DataTransfer();
+                dt.items.add(e.dataTransfer.files[0]);
+                input.files = dt.files;
+                input.dispatchEvent(new Event('change'));
+            } catch(err) {}
+        }
+    });
+});
+
+// ── Ripple ──
+document.querySelectorAll('.ripple-host').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+        var r = el.getBoundingClientRect();
+        var size = Math.max(r.width, r.height) * 1.5;
+        var x = e.clientX - r.left - size / 2;
+        var y = e.clientY - r.top  - size / 2;
+        var rip = document.createElement('span');
+        rip.className = 'ripple-effect';
+        rip.style.cssText = 'width:'+size+'px;height:'+size+'px;left:'+x+'px;top:'+y+'px;';
+        el.appendChild(rip);
+        setTimeout(function() { rip.remove(); }, 750);
+    });
+});
+
+// ── Submit loading state ──
+document.getElementById('mainForm').addEventListener('submit', function() {
+    var btn  = document.getElementById('submitBtn');
+    var txt  = btn && btn.querySelector('.btn-submit-text');
+    var load = btn && btn.querySelector('.btn-submit-loading');
+    if (btn && txt && load) {
+        txt.style.display  = 'none';
+        load.style.display = 'flex';
+        btn.disabled = true;
+    }
+});
+</script>
+</body>
+</html>

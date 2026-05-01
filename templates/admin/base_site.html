@@ -1,0 +1,189 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Panel Administrativo – UAEMex{% endblock %}
+
+{% block extrahead %}
+<link rel="shortcut icon" href="{% static 'img/logo.JPG' %}?v=4" type="image/jpeg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+    body, #header, .nav-global { font-family: 'Inter', sans-serif !important; }
+
+    #header {
+        background: #2e7d32 !important;
+        padding: 12px 20px !important;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    #branding h1, #branding h1 a {
+        color: #fff !important;
+        font-size: 16px !important;
+        font-weight: 600 !important;
+    }
+
+    /* Fondo en pantalla de login */
+    body.login {
+        background-image: url("{% static 'img/fondo.JPG.png' %}") !important;
+        background-size: cover !important;
+        background-position: center !important;
+        background-attachment: fixed !important;
+    }
+
+    body.login #container {
+        background: rgba(255,255,255,0.93) !important;
+        border-radius: 14px !important;
+        padding: 2rem !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.15) !important;
+    }
+
+    .dashboard-bienvenida {
+        background: linear-gradient(135deg, #2e7d32, #43a047);
+        border-radius: 12px;
+        padding: 2rem;
+        color: white;
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .dashboard-bienvenida img {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid rgba(255,255,255,0.4);
+    }
+
+    .dashboard-bienvenida h2 {
+        font-size: 22px;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .dashboard-bienvenida p {
+        font-size: 13px;
+        opacity: 0.85;
+        margin: 0;
+    }
+
+    .accesos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .acceso-card {
+        background: #fff;
+        border: 1px solid #c8e6c9;
+        border-radius: 10px;
+        padding: 1.2rem;
+        text-decoration: none;
+        transition: background 0.2s, border-color 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .acceso-card:hover {
+        background: #f1fdf3;
+        border-color: #2e7d32;
+        text-decoration: none;
+    }
+
+    .acceso-icon {
+        width: 40px; height: 40px;
+        background: #e8f5e9;
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .acceso-texto strong {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #1b5e20;
+    }
+
+    .acceso-texto span {
+        font-size: 12px;
+        color: #81c784;
+    }
+
+    .seccion-titulo {
+        font-size: 13px;
+        font-weight: 600;
+        color: #388e3c;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin: 1.5rem 0 0.8rem;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #c8e6c9;
+    }
+</style>
+{% endblock %}
+
+{% block branding %}
+<img src="{% static 'img/logo.JPG' %}" alt="UAEMex"
+     style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.5);">
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}" style="color:#fff;text-decoration:none;">
+        Panel Administrativo – Facultad de Medicina y Química
+    </a>
+</h1>
+{% endblock %}
+
+{% block content %}
+<div style="padding: 1.5rem 0;">
+
+    <div class="dashboard-bienvenida">
+        <img src="{% static 'img/logo.JPG' %}" alt="UAEMex">
+        <div>
+            <h2>Bienvenido, {{ user.get_full_name|default:user.username }} 👋</h2>
+            <p>Universidad Autónoma del Estado de México &nbsp;·&nbsp; Facultad de Medicina y Química</p>
+            <p style="margin-top:4px;">Sistema de Trámite de Titulación – Registro de No Deuda &nbsp;·&nbsp; UAEMex 2026</p>
+        </div>
+    </div>
+
+    <div class="seccion-titulo">Accesos rápidos</div>
+    <div class="accesos-grid">
+        <a href="/admin/alumnos/alumno/" class="acceso-card">
+            <div class="acceso-icon">🎓</div>
+            <div class="acceso-texto">
+                <strong>Alumnos</strong>
+                <span>Ver y gestionar registros</span>
+            </div>
+        </a>
+        <a href="/admin/alumnos/alumno/add/" class="acceso-card">
+            <div class="acceso-icon">➕</div>
+            <div class="acceso-texto">
+                <strong>Nuevo alumno</strong>
+                <span>Agregar registro</span>
+            </div>
+        </a>
+        <a href="/admin/auth/user/" class="acceso-card">
+            <div class="acceso-icon">👤</div>
+            <div class="acceso-texto">
+                <strong>Usuarios</strong>
+                <span>Gestionar accesos</span>
+            </div>
+        </a>
+        <a href="/" class="acceso-card">
+            <div class="acceso-icon">🌐</div>
+            <div class="acceso-texto">
+                <strong>Ver sitio</strong>
+                <span>Ir al formulario público</span>
+            </div>
+        </a>
+    </div>
+
+    <div class="seccion-titulo">Módulos del sistema</div>
+    {{ block.super }}
+
+</div>
+{% endblock %}

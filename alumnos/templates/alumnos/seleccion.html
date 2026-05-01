@@ -1,0 +1,765 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" type="image/jpeg" href="{% static 'img/logo.JPG' %}">
+    <title>Biblioteca de Medicina y Química – UAEMex</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+/* ── RESET ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+    --verde:   #2e7d32;
+    --verde2:  #43a047;
+    --verde3:  #1b5e20;
+    --verde4:  #388e3c;
+    --verde-l: #e8f5e9;
+    --verde-m: #a5d6a7;
+    --oro:     #b8973a;
+    --shadow:  0 4px 24px rgba(46,125,50,0.12);
+    --shadow2: 0 16px 56px rgba(46,125,50,0.22);
+    --radius:  20px;
+    --ease:    cubic-bezier(0.22, 1, 0.36, 1);
+}
+html { scroll-behavior: smooth; }
+body {
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    background: #f0f9f0;
+    display: flex; flex-direction: column; align-items: center;
+    overflow-x: hidden;
+}
+
+/* ── KEYFRAMES ── */
+@keyframes loaderSpin    { to { transform: rotate(360deg); } }
+@keyframes dotBounce     { 0%,100%{transform:translateY(0);opacity:.45;}50%{transform:translateY(-9px);opacity:1;} }
+@keyframes kenBurns      { 0%{transform:scale(1.00) translate(0%,0%);}50%{transform:scale(1.07) translate(-0.7%,0.5%);}100%{transform:scale(1.05) translate(0.5%,-0.3%);} }
+@keyframes fadeSlideUp   { from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);} }
+@keyframes fadeSlideDown { from{opacity:0;transform:translateY(-22px);}to{opacity:1;transform:translateY(0);} }
+@keyframes fadeScale     { from{opacity:0;transform:scale(0.85);}to{opacity:1;transform:scale(1);} }
+@keyframes floatBob      { 0%,100%{transform:translateY(0);}50%{transform:translateY(-9px);} }
+@keyframes lineExpand    { from{transform:scaleX(0);opacity:0;}to{transform:scaleX(1);opacity:1;} }
+@keyframes scrollBounce  { 0%,100%{transform:translateX(-50%) translateY(0);opacity:.6;}50%{transform:translateX(-50%) translateY(9px);opacity:1;} }
+@keyframes rippleAnim    { to{transform:scale(5);opacity:0;} }
+@keyframes shimmerPass   { 0%{transform:translateX(-120%) skewX(-15deg);}100%{transform:translateX(220%) skewX(-15deg);} }
+@keyframes pulseRing     { 0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.25);}50%{box-shadow:0 0 0 10px rgba(255,255,255,0);} }
+@keyframes gradShift     { 0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;} }
+
+/* ── PAGE LOADER ── */
+.page-loader {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(135deg, #1a4d1c 0%, #2e7d32 55%, #388e3c 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+    transition: opacity 0.8s var(--ease), visibility 0.8s;
+}
+.page-loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.loader-center {
+    position: relative; width: 80px; height: 80px;
+    display: flex; align-items: center; justify-content: center;
+}
+.loader-ring {
+    position: absolute; inset: 0;
+    border: 3px solid rgba(255,255,255,0.15);
+    border-top-color: rgba(255,255,255,0.9);
+    border-right-color: rgba(255,255,255,0.45);
+    border-radius: 50%;
+    animation: loaderSpin 0.9s linear infinite;
+}
+.loader-ring2 {
+    position: absolute; inset: 9px;
+    border: 2px solid rgba(255,255,255,0.08);
+    border-bottom-color: rgba(255,255,255,0.4);
+    border-radius: 50%;
+    animation: loaderSpin 1.5s linear infinite reverse;
+}
+.loader-center img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
+.loader-text { color: rgba(255,255,255,0.78); font-size: 11px; font-weight: 600; letter-spacing: 4px; text-transform: uppercase; }
+.loader-dots { display: flex; gap: 7px; }
+.loader-dots span { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.5); animation: dotBounce 1.1s ease-in-out infinite; }
+.loader-dots span:nth-child(2) { animation-delay: .18s; }
+.loader-dots span:nth-child(3) { animation-delay: .36s; }
+
+/* ── SCROLL REVEAL ── */
+.reveal {
+    opacity: 0; transform: translateY(36px);
+    transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
+}
+.reveal.from-left  { transform: translateX(-44px); }
+.reveal.from-right { transform: translateX(44px); }
+.reveal.scale-in   { transform: scale(0.9); }
+.reveal.revealed   { opacity: 1 !important; transform: none !important; }
+
+/* ── RIPPLE ── */
+.ripple-host { position: relative; overflow: hidden; }
+.ripple-effect {
+    position: absolute; border-radius: 50%;
+    background: rgba(255,255,255,0.28);
+    transform: scale(0);
+    animation: rippleAnim 0.7s linear;
+    pointer-events: none;
+}
+
+/* ── NAVBAR ── */
+.navbar {
+    width: 100%;
+    background: rgba(255,255,255,0.98);
+    border-bottom: 3px solid var(--verde);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 16px 2rem 0;
+    position: sticky; top: 0; z-index: 500;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    transition: background 0.4s ease, box-shadow 0.4s ease;
+    will-change: background;
+}
+.navbar.glass {
+    background: rgba(255,255,255,0.80);
+    backdrop-filter: blur(22px) saturate(1.9);
+    -webkit-backdrop-filter: blur(22px) saturate(1.9);
+    box-shadow: 0 4px 32px rgba(0,0,0,0.11);
+}
+.navbar-top { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.navbar-top img { width: 54px; height: auto; transition: transform 0.35s var(--ease); }
+.navbar-top:hover img { transform: scale(1.07) rotate(-3deg); }
+.navbar-univ { font-size: 13px; font-weight: 800; color: var(--verde3); }
+.navbar-sub  { font-size: 11px; color: #888; margin-top: 2px; }
+.navbar-menu {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    border-top: 1px solid #eee; width: 100%; max-width: 1100px;
+}
+.navbar-menu a {
+    font-size: 12px; color: #555; text-decoration: none;
+    padding: 9px 13px; white-space: nowrap;
+    transition: color 0.2s;
+    position: relative;
+}
+.navbar-menu a::after {
+    content: ''; position: absolute; bottom: 0; left: 50%; right: 50%;
+    height: 2px; background: var(--verde);
+    transition: left 0.25s ease, right 0.25s ease;
+    border-radius: 2px 2px 0 0;
+}
+.navbar-menu a:hover { color: var(--verde); }
+.navbar-menu a:hover::after { left: 13px; right: 13px; }
+.navbar-div { color: #e0e0e0; padding: 9px 2px; font-size: 11px; }
+
+/* ── HERO ── */
+.hero {
+    width: 100%; min-height: 530px;
+    position: relative; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 5rem 2rem 5.5rem;
+    overflow: hidden;
+}
+.hero-bg {
+    position: absolute; inset: -6%;
+    background-image: url("{% static 'img/fondobiblioteca.jpg' %}");
+    background-size: cover; background-position: center 30%;
+    filter: brightness(0.48) saturate(1.2);
+    animation: kenBurns 24s ease-in-out infinite alternate;
+    will-change: transform;
+}
+.hero-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(165deg,
+        rgba(5,28,5,0.70) 0%,
+        rgba(15,52,15,0.45) 45%,
+        rgba(3,16,3,0.82) 100%
+    );
+}
+.hero-content { position: relative; z-index: 2; max-width: 740px; }
+.hero-badge {
+    display: inline-flex; align-items: center; gap: 9px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.26);
+    border-radius: 50px; padding: 6px 20px;
+    font-size: 11px; font-weight: 600; color: #a5d6a7;
+    letter-spacing: 2.5px; text-transform: uppercase;
+    backdrop-filter: blur(8px);
+    margin-bottom: 1.5rem;
+    animation: fadeSlideDown 0.7s var(--ease) 0.2s both;
+}
+.hero-badge-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: #69f0ae;
+    animation: pulseRing 2s ease-in-out infinite;
+}
+.hero-logo-wrap {
+    width: 92px; height: 92px;
+    background: rgba(255,255,255,0.10);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.4rem;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,255,255,0.22);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.35);
+    animation: fadeScale 0.7s var(--ease) 0.4s both, floatBob 5s ease-in-out 1.8s infinite;
+}
+.hero-logo-wrap img { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; }
+.hero-univ {
+    font-size: clamp(22px, 4.5vw, 36px); font-weight: 900; color: #fff;
+    text-transform: uppercase; line-height: 1.1;
+    text-shadow: 0 3px 20px rgba(0,0,0,0.45);
+    animation: fadeSlideUp 0.7s var(--ease) 0.6s both;
+}
+.hero-biblioteca {
+    font-size: clamp(14px, 2.5vw, 20px); font-weight: 400;
+    color: #b9f6ca; margin-top: 0.9rem; letter-spacing: 0.8px;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.4);
+    animation: fadeSlideUp 0.7s var(--ease) 0.78s both;
+}
+.hero-line {
+    width: 70px; height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+    margin: 1.5rem auto;
+    border-radius: 2px; transform-origin: center;
+    transform: scaleX(0); opacity: 0;
+    animation: lineExpand 0.8s var(--ease) 0.95s forwards;
+}
+.hero-desc {
+    font-size: 15.5px; color: rgba(255,255,255,0.76); line-height: 1.72;
+    max-width: 500px; margin: 0 auto; font-weight: 300;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.3);
+    animation: fadeSlideUp 0.7s var(--ease) 1.1s both;
+}
+.hero-scroll {
+    position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%);
+    z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 5px;
+    cursor: pointer; opacity: 0;
+    animation: fadeSlideUp 0.5s ease 1.7s forwards;
+}
+.hero-scroll-text { font-size: 9px; color: rgba(255,255,255,0.48); letter-spacing: 3px; text-transform: uppercase; }
+.hero-scroll-icon {
+    width: 28px; height: 28px;
+    border: 1.5px solid rgba(255,255,255,0.32);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    animation: scrollBounce 2.2s ease-in-out 2.2s infinite;
+}
+.hero-caption {
+    position: absolute; bottom: 1rem; right: 1.5rem; z-index: 3;
+    font-size: 10px; color: rgba(255,255,255,0.36); font-style: italic;
+}
+
+/* ── SELECCIÓN SECTION ── */
+.seleccion-section {
+    width: 100%; position: relative;
+    background-image: url("{% static 'img/fonditoprincipal.jpeg' %}");
+    background-size: cover; background-position: center;
+    background-attachment: fixed;
+}
+.seleccion-section::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg,
+        rgba(232,248,232,0.91) 0%,
+        rgba(240,252,240,0.93) 50%,
+        rgba(225,244,225,0.91) 100%
+    );
+    backdrop-filter: blur(1.5px);
+}
+.seleccion-wrapper {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 980px; margin: 0 auto;
+    padding: 4.5rem 2rem 3.5rem;
+    display: flex; flex-direction: column; align-items: center; gap: 2.2rem;
+}
+.seleccion-eyebrow {
+    font-size: 10px; font-weight: 700; color: var(--verde);
+    text-transform: uppercase; letter-spacing: 4px;
+    background: rgba(255,255,255,0.76);
+    padding: 5px 18px; border-radius: 50px;
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(46,125,50,0.15);
+}
+.seleccion-title {
+    font-size: clamp(22px, 3.5vw, 30px); font-weight: 900;
+    color: var(--verde3); text-align: center; line-height: 1.2;
+}
+.seleccion-title span { color: var(--verde2); }
+.botones-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 2rem; width: 100%;
+}
+
+/* ── FACULTY CARDS ── */
+.btn-facultad {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 1.2rem; padding: 3rem 1.8rem;
+    border: none; border-radius: var(--radius);
+    text-decoration: none; color: #fff;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.24);
+    min-height: 268px;
+    position: relative; overflow: hidden;
+    background-size: 105%; background-position: center;
+    transition: transform 0.45s var(--ease), box-shadow 0.45s var(--ease), background-size 0.65s ease;
+    will-change: transform;
+    cursor: pointer;
+}
+.btn-facultad::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(165deg, rgba(5,38,5,0.70) 0%, rgba(18,70,18,0.54) 100%);
+    transition: background 0.45s ease; z-index: 0;
+}
+.btn-facultad::after {
+    content: ''; position: absolute;
+    top: 0; left: -80%; width: 55%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.13), transparent);
+    transform: skewX(-14deg); pointer-events: none; z-index: 1;
+}
+.btn-facultad:hover::after { animation: shimmerPass 0.65s ease; }
+.btn-facultad:hover {
+    transform: translateY(-12px) scale(1.02);
+    box-shadow: 0 32px 72px rgba(0,0,0,0.40), 0 0 0 1px rgba(255,255,255,0.15);
+    background-size: 118%;
+}
+.btn-facultad:hover::before {
+    background: linear-gradient(165deg, rgba(5,38,5,0.46) 0%, rgba(18,70,18,0.32) 100%);
+}
+.btn-facultad > * { position: relative; z-index: 2; }
+.btn-medicina { background-image: url("{% static 'img/medicina.jpg' %}"); }
+.btn-quimica  { background-image: url("{% static 'img/quimica.jpg' %}");  }
+
+.btn-icon {
+    width: 82px; height: 82px;
+    background: rgba(255,255,255,0.14);
+    border: 2px solid rgba(255,255,255,0.30);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 34px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.18);
+    transition: transform 0.4s var(--ease), background 0.4s ease, box-shadow 0.4s ease;
+}
+.btn-facultad:hover .btn-icon {
+    transform: scale(1.18) rotate(-6deg);
+    background: rgba(255,255,255,0.24);
+    box-shadow: 0 10px 32px rgba(0,0,0,0.28);
+}
+.btn-nombre {
+    font-size: 22px; font-weight: 900; text-align: center;
+    text-transform: uppercase; line-height: 1.18;
+    text-shadow: 0 2px 14px rgba(0,0,0,0.42); letter-spacing: 0.5px;
+}
+.btn-sub {
+    font-size: 12px; color: rgba(255,255,255,0.80); font-weight: 400;
+    text-align: center; line-height: 1.65;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.3);
+}
+.btn-cta {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,0.16);
+    border: 1px solid rgba(255,255,255,0.32);
+    border-radius: 50px; padding: 8px 20px;
+    font-size: 12px; font-weight: 700; color: #fff;
+    backdrop-filter: blur(6px);
+    transition: background 0.3s, gap 0.3s var(--ease);
+}
+.btn-cta svg { transition: transform 0.3s var(--ease); flex-shrink: 0; }
+.btn-facultad:hover .btn-cta { background: rgba(255,255,255,0.26); gap: 11px; }
+.btn-facultad:hover .btn-cta svg { transform: translateX(3px); }
+
+/* ── INFO BOX ── */
+.info-box {
+    width: 100%;
+    background: rgba(255,255,255,0.74);
+    border: 1px solid rgba(46,125,50,0.14);
+    border-left: 4px solid var(--verde);
+    border-radius: 14px; padding: 1.3rem 1.7rem;
+    font-size: 13px; color: #2e5030; line-height: 1.78;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 24px rgba(46,125,50,0.09);
+    transition: box-shadow 0.3s, border-color 0.3s;
+}
+.info-box:hover { box-shadow: 0 8px 32px rgba(46,125,50,0.16); border-color: rgba(46,125,50,0.25); }
+.info-box strong { display: block; margin-bottom: 5px; font-size: 14px; }
+
+/* ── FOOTER ── */
+.footer-contacto {
+    width: 100%;
+    background: linear-gradient(180deg, #fff 0%, #f6fbf6 100%);
+    border-top: 2px solid #d4c27a;
+    font-family: 'Inter', sans-serif;
+}
+.footer-top { text-align: center; padding: 2.5rem 0 1.2rem; }
+.footer-title {
+    font-size: 13px; font-weight: 800; letter-spacing: 4px;
+    color: var(--verde); margin-top: 10px; text-transform: uppercase;
+}
+.footer-hr {
+    width: 80%; height: 1px;
+    background: linear-gradient(to right, transparent, var(--oro), transparent);
+    margin: 1rem auto; border: none;
+}
+.footer-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 2rem; max-width: 1100px; margin: 0 auto;
+    padding: 0.5rem 2.5rem 2.5rem;
+}
+.f-col { display: flex; flex-direction: column; gap: 1.1rem; }
+.map-wrap { border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.10); }
+.map-wrap iframe { display: block; }
+.f-addr { font-size: 12px; color: #555; line-height: 1.75; }
+.f-addr strong { display: block; color: #333; margin-bottom: 3px; }
+.f-phone-row { display: flex; align-items: flex-start; gap: 14px; }
+.f-phone-icon {
+    width: 42px; height: 42px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--verde), var(--verde2));
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 14px rgba(46,125,50,0.28);
+    transition: transform 0.3s var(--ease), box-shadow 0.3s;
+}
+.f-phone-icon:hover { transform: scale(1.1) rotate(-5deg); box-shadow: 0 8px 22px rgba(46,125,50,0.38); }
+.f-phone-text { font-size: 13px; color: #333; line-height: 1.75; }
+.f-phone-text strong { display: block; }
+.social-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.s-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    text-decoration: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.14);
+    transition: transform 0.3s var(--ease), box-shadow 0.3s;
+}
+.s-btn:hover { transform: translateY(-5px) scale(1.12); box-shadow: 0 10px 24px rgba(0,0,0,0.24); }
+.f-email-row { display: flex; align-items: center; gap: 14px; }
+.f-email-icon {
+    width: 42px; height: 42px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--verde), var(--verde2));
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 14px rgba(46,125,50,0.28);
+}
+.f-email-text { font-size: 13px; color: #333; }
+.dtic-card {
+    border: 1px solid #e8e8e8; border-radius: 12px;
+    padding: 10px 14px; display: flex; align-items: center; gap: 12px;
+    background: linear-gradient(135deg, #fafffe, #f0faf0);
+    transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+}
+.dtic-card:hover { border-color: #c8e6c9; box-shadow: 0 4px 16px rgba(46,125,50,0.1); transform: translateY(-2px); }
+.dtic-label { font-size: 11px; font-weight: 800; color: var(--verde); letter-spacing: 1.5px; }
+.dtic-sub   { font-size: 9.5px; color: #888; line-height: 1.5; }
+.footer-bottom { text-align: center; padding: 1.2rem 0 2rem; border-top: 1px solid #f0e8d0; }
+.admin-label { font-size: 12px; font-weight: 800; letter-spacing: 3px; color: var(--verde); margin-top: 7px; text-transform: uppercase; }
+.admin-year { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 6px; }
+.admin-year span { font-size: 12px; color: var(--oro); font-weight: 600; }
+.year-line { height: 1px; width: 65px; background: linear-gradient(to right, transparent, var(--oro)); }
+.year-line:last-child { background: linear-gradient(to left, transparent, var(--oro)); }
+
+/* ══ RESPONSIVE ══ */
+
+/* Tablet */
+@media (max-width: 920px) {
+    .footer-grid { grid-template-columns: 1fr 1fr; gap: 1.4rem; }
+    .botones-grid { gap: 1.4rem; }
+    .hero { min-height: 460px; }
+}
+
+/* Mobile grande */
+@media (max-width: 700px) {
+    /* Navbar compacto */
+    .navbar { padding: 10px 1rem 0; }
+    .navbar-top img { width: 40px; }
+    .navbar-univ { font-size: 11.5px; line-height: 1.3; }
+    .navbar-sub  { font-size: 9.5px; }
+    .navbar-top  { gap: 10px; margin-bottom: 8px; }
+    .navbar-menu {
+        overflow-x: auto; flex-wrap: nowrap;
+        justify-content: flex-start;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 1px;
+    }
+    .navbar-menu::-webkit-scrollbar { display: none; }
+    .navbar-menu a  { font-size: 11px; padding: 7px 10px; white-space: nowrap; }
+    .navbar-div     { padding: 7px 2px; }
+
+    /* Hero */
+    .hero { min-height: 340px; padding: 3rem 1.2rem 4rem; }
+    .hero-logo-wrap { width: 70px; height: 70px; margin-bottom: 1rem; animation: fadeScale 0.7s var(--ease) 0.4s both; }
+    .hero-logo-wrap img { width: 56px; height: 56px; }
+    .hero-badge { font-size: 9.5px; padding: 5px 13px; margin-bottom: 1rem; }
+    .hero-univ  { font-size: 20px; }
+    .hero-biblioteca { font-size: 13px; }
+    .hero-desc  { font-size: 13.5px; }
+    .hero-line  { margin: 1rem auto; }
+    .hero-scroll { display: none; }
+
+    /* Cards facultad */
+    .botones-grid { grid-template-columns: 1fr; gap: 1.2rem; }
+    .btn-facultad { min-height: 180px; padding: 1.8rem 1.2rem; border-radius: 16px; }
+    .btn-icon   { width: 68px; height: 68px; font-size: 28px; }
+    .btn-nombre { font-size: 19px; }
+    .btn-sub    { font-size: 11.5px; }
+    .btn-cta    { font-size: 11.5px; padding: 7px 16px; }
+
+    /* Sección selección */
+    .seleccion-title  { font-size: 21px; }
+    .seleccion-wrapper { padding: 2.5rem 1.2rem 2rem; gap: 1.6rem; }
+
+    /* Footer */
+    .footer-grid { grid-template-columns: 1fr; padding: 0.5rem 1.5rem 2rem; }
+    .footer-top  { padding: 1.5rem 0 0.8rem; }
+    .map-wrap iframe { height: 150px; }
+
+    /* Info box */
+    .info-box { font-size: 12.5px; padding: 1rem 1.2rem; }
+}
+
+/* Mobile pequeño */
+@media (max-width: 420px) {
+    .hero { min-height: 300px; padding: 2.5rem 1rem 3.5rem; }
+    .hero-univ { font-size: 17px; }
+    .hero-biblioteca { font-size: 12px; }
+    .hero-badge { display: none; }
+    .btn-facultad { min-height: 160px; }
+    .btn-nombre { font-size: 17px; }
+    .seleccion-title { font-size: 18px; }
+    .navbar-univ { font-size: 10.5px; }
+}
+    </style>
+</head>
+<body>
+
+<!-- ══ PAGE LOADER ══ -->
+<div class="page-loader" id="pageLoader">
+    <div class="loader-center">
+        <div class="loader-ring"></div>
+        <div class="loader-ring2"></div>
+        <img src="{% static 'img/logo.JPG' %}" alt="UAEMex">
+    </div>
+    <div class="loader-text">UAEMex · Biblioteca</div>
+    <div class="loader-dots"><span></span><span></span><span></span></div>
+</div>
+
+<!-- ══ NAVBAR ══ -->
+<nav class="navbar" id="mainNav">
+    <div class="navbar-top">
+        <img src="{% static 'img/logo.JPG' %}" alt="UAEMex">
+        <div>
+            <div class="navbar-univ">Universidad Autónoma del Estado de México</div>
+            <div class="navbar-sub">Sistema de Registro de Protocolo de Titulación</div>
+        </div>
+    </div>
+    <div class="navbar-menu">
+        <a href="#">Mi Universidad</a><span class="navbar-div">|</span>
+        <a href="#">Oferta Educativa</a><span class="navbar-div">|</span>
+        <a href="#">Vida Universitaria</a><span class="navbar-div">|</span>
+        <a href="#">UAEMéx Virtual</a><span class="navbar-div">|</span>
+        <a href="#">Transparencia</a>
+    </div>
+</nav>
+
+<!-- ══ HERO ══ -->
+<section class="hero" id="heroSection">
+    <div class="hero-bg"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+        <div class="hero-badge">
+            <span class="hero-badge-dot"></span>
+            UAEMex &nbsp;·&nbsp; Titulación
+        </div>
+        <div class="hero-logo-wrap">
+            <img src="{% static 'img/logo.JPG' %}" alt="UAEMex">
+        </div>
+        <div class="hero-univ">Universidad Autónoma<br>del Estado de México</div>
+        <div class="hero-biblioteca">Biblioteca de Medicina y Química</div>
+        <div class="hero-line"></div>
+        <div class="hero-desc">Selecciona tu facultad para iniciar el<br>registro de protocolo de titulación</div>
+    </div>
+    <div class="hero-scroll" onclick="document.getElementById('seleccionSection').scrollIntoView({behavior:'smooth'})">
+        <span class="hero-scroll-text">Explorar</span>
+        <div class="hero-scroll-icon">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M2 4.5l4 4 4-4" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+    </div>
+    <div class="hero-caption">Biblioteca de Área "Dr. Rafael López Castañares"</div>
+</section>
+
+<!-- ══ SELECCIÓN ══ -->
+<section class="seleccion-section" id="seleccionSection">
+<div class="seleccion-wrapper">
+
+    <div class="reveal" style="text-align:center;">
+        <div class="seleccion-eyebrow">Trámite de Titulación 2026</div>
+    </div>
+
+    <div class="reveal" style="text-align:center; transition-delay:.1s;">
+        <div class="seleccion-title">¿A qué <span>facultad</span> perteneces?</div>
+    </div>
+
+    <div class="botones-grid">
+        <a href="/medicina/" class="btn-facultad btn-medicina ripple-host reveal from-left" style="transition-delay:.15s;">
+            <div class="btn-icon">🏥</div>
+            <div class="btn-nombre">Facultad de<br>Medicina</div>
+            <div class="btn-sub">Lic. Médico Cirujano · Nutrición · Fisioterapia<br>Terapia Ocupacional · Bioingeniería Médica</div>
+            <div class="btn-cta">
+                Registrarme
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 7h10M8 3l4 4-4 4" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        </a>
+        <a href="/quimica/" class="btn-facultad btn-quimica ripple-host reveal from-right" style="transition-delay:.2s;">
+            <div class="btn-icon">⚗️</div>
+            <div class="btn-nombre">Facultad de<br>Química</div>
+            <div class="btn-sub">Registro de Protocolo de Titulación<br>Modalidades de Evaluación Profesional</div>
+            <div class="btn-cta">
+                Registrarme
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 7h10M8 3l4 4-4 4" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        </a>
+    </div>
+
+    <div class="info-box reveal" style="transition-delay:.28s;">
+        <strong>📋 Información importante</strong>
+        El registro es confidencial y tiene fines exclusivos de control de Protocolo de Titulación.
+        Al finalizar el envío recibirás un comprobante de registro. Deberás presentar de manera presencial
+        el formato de evaluación profesional debidamente firmado a la Subdirección Académica.
+    </div>
+</div>
+</section>
+
+<!-- ══ FOOTER ══ -->
+<footer class="footer-contacto">
+    <div class="footer-top reveal">
+        <svg width="62" height="52" viewBox="0 0 80 65" fill="none">
+            <path d="M40 5 C30 5 22 13 22 22 C22 31 30 38 40 42 C50 38 58 31 58 22 C58 13 50 5 40 5Z" fill="#4a7c3f"/>
+            <path d="M25 28 C15 25 10 32 14 40 C18 48 28 48 35 44" fill="#4a7c3f"/>
+            <path d="M55 28 C65 25 70 32 66 40 C62 48 52 48 45 44" fill="#4a7c3f"/>
+            <path d="M30 42 C25 50 28 58 35 60 C40 62 45 60 50 58 C57 55 58 48 55 42" fill="#b8973a"/>
+            <path d="M35 44 C33 52 36 60 40 61 C44 60 47 52 45 44" fill="#b8973a"/>
+        </svg>
+        <div class="footer-title">Contáctanos</div>
+        <hr class="footer-hr">
+    </div>
+
+    <div class="footer-grid">
+        <div class="f-col reveal from-left" style="transition-delay:.1s;">
+            <div class="map-wrap">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3762.4!2d-99.6567!3d19.2827!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85cd890b7e7e7e7f%3A0x1!2sFacultad+de+Medicina+UAEMex!5e0!3m2!1ses!2smx!4v1"
+                    width="100%" height="170" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+            </div>
+            <div class="f-addr">
+                <strong>📍 Av Paseo Tollocan, C. Jesús Carranza</strong>
+                Moderna de la Cruz, Toluca, México C.P. 50180
+            </div>
+            <div class="f-addr">
+                <strong>📍 Universidad Autónoma del Estado de México</strong>
+                Instituto Literario # 100. C.P. 50000 Col. Centro
+            </div>
+        </div>
+
+        <div class="f-col reveal" style="justify-content:center; transition-delay:.18s;">
+            <div class="f-phone-row">
+                <div class="f-phone-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+                </div>
+                <div class="f-phone-text">+52 722 270 2899</div>
+            </div>
+            <div class="f-phone-row">
+                <div class="f-phone-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+                </div>
+                <div class="f-phone-text">
+                    <strong>722 226 23 00 – Interior de la República</strong>
+                    011 52 722 226 23 00 – USA y Canadá<br>
+                    00 52 722 226 23 00 – Europa y resto del mundo
+                </div>
+            </div>
+        </div>
+
+        <div class="f-col reveal from-right" style="transition-delay:.26s;">
+            <div class="social-row">
+                <a href="https://facebook.com/uaemex" target="_blank" class="s-btn" style="background:#1877f2;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+                </a>
+                <a href="https://tiktok.com/@uaemex" target="_blank" class="s-btn" style="background:#000;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.75a4.85 4.85 0 01-1.01-.06z"/></svg>
+                </a>
+                <a href="https://instagram.com/uaemex" target="_blank" class="s-btn" style="background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fd5949 45%,#d6249f 60%,#285AEB 90%);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="white" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="white" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.5" fill="white"/></svg>
+                </a>
+                <a href="https://youtube.com/uaemex" target="_blank" class="s-btn" style="background:#ff0000;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 00-1.95 1.96A29 29 0 001 12a29 29 0 00.46 5.58A2.78 2.78 0 003.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="#ff0000"/></svg>
+                </a>
+            </div>
+            <div class="f-email-row">
+                <div class="f-email-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+                </div>
+                <div class="f-email-text">rectoria@uaemex.mx</div>
+            </div>
+            <div class="dtic-card">
+                <svg width="30" height="30" viewBox="0 0 40 40" fill="none">
+                    <circle cx="20" cy="20" r="4" fill="#4a7c3f"/>
+                    <circle cx="20" cy="20" r="10" fill="none" stroke="#4a7c3f" stroke-width="1.5" stroke-dasharray="3 2"/>
+                    <circle cx="20" cy="20" r="16" fill="none" stroke="#b8973a" stroke-width="1" stroke-dasharray="2 3"/>
+                </svg>
+                <div>
+                    <div class="dtic-label">DTIC</div>
+                    <div class="dtic-sub">Dirección de Tecnologías<br>de la Información y Comunicaciones</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="footer-hr">
+    <div class="footer-bottom">
+        <svg width="52" height="44" viewBox="0 0 80 65" fill="none">
+            <path d="M40 5 C30 5 22 13 22 22 C22 31 30 38 40 42 C50 38 58 31 58 22 C58 13 50 5 40 5Z" fill="#4a7c3f"/>
+            <path d="M25 28 C15 25 10 32 14 40 C18 48 28 48 35 44" fill="#4a7c3f"/>
+            <path d="M55 28 C65 25 70 32 66 40 C62 48 52 48 45 44" fill="#4a7c3f"/>
+            <path d="M30 42 C25 50 28 58 35 60 C40 62 45 60 50 58 C57 55 58 48 55 42" fill="#b8973a"/>
+            <path d="M35 44 C33 52 36 60 40 61 C44 60 47 52 45 44" fill="#b8973a"/>
+        </svg>
+        <div class="admin-label">Administración Universitaria</div>
+        <div class="admin-year">
+            <div class="year-line"></div>
+            <span>2025 – 2029</span>
+            <div class="year-line"></div>
+        </div>
+    </div>
+</footer>
+
+<script>
+// ── Loader ──
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        var l = document.getElementById('pageLoader');
+        if (l) l.classList.add('hidden');
+    }, 900);
+});
+
+// ── Navbar glass ──
+var nav = document.getElementById('mainNav');
+window.addEventListener('scroll', function() {
+    nav.classList.toggle('glass', window.scrollY > 60);
+}, {passive: true});
+
+// ── Scroll Reveal ──
+var obs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+        if (e.isIntersecting) { e.target.classList.add('revealed'); obs.unobserve(e.target); }
+    });
+}, {threshold: 0.10, rootMargin: '0px 0px -30px 0px'});
+document.querySelectorAll('.reveal').forEach(function(el) { obs.observe(el); });
+
+// ── Ripple ──
+document.querySelectorAll('.ripple-host').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+        var r = el.getBoundingClientRect();
+        var size = Math.max(r.width, r.height) * 1.6;
+        var x = e.clientX - r.left - size / 2;
+        var y = e.clientY - r.top  - size / 2;
+        var rip = document.createElement('span');
+        rip.className = 'ripple-effect';
+        rip.style.cssText = 'width:'+size+'px;height:'+size+'px;left:'+x+'px;top:'+y+'px;';
+        el.appendChild(rip);
+        setTimeout(function() { rip.remove(); }, 750);
+    });
+});
+</script>
+</body>
+</html>
