@@ -2,11 +2,12 @@ from pathlib import Path
 import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-4e!z4e&r1@ipwwherj*rvfe2vs1g$21t9@_qa=^lj%b-g+9^qd')
 
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']  # en producción cambia a tu dominio
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'jazzmin',
@@ -16,8 +17,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'cloudinary_storage',
-    'cloudinary',
     'alumnos',
 ]
 
@@ -73,28 +72,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STORAGES = {
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-    },
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-}
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-
-# Cloudinary para archivos subidos por alumnos
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
-    'API_KEY':    os.environ.get('CLOUDINARY_API_KEY', ''),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', ''),
-}
-if os.environ.get('CLOUDINARY_CLOUD_NAME'):
-    STORAGES["default"] = {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-    }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
