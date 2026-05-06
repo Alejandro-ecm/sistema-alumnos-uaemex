@@ -10,7 +10,7 @@ class AlumnoForm(forms.ModelForm):
 
     class Meta:
         model = Alumno
-        exclude = ['estado', 'fecha_registro', 'facultad']
+        exclude = ['estado', 'fecha_registro', 'facultad', 'semestre', 'tema', 'director']
         widgets = {
             'nombre': forms.TextInput(attrs={'placeholder': 'APELLIDOS NOMBRE(S)', 'style': 'text-transform:uppercase'}),
             'numero_cuenta': forms.TextInput(attrs={'placeholder': 'Ej. 1234567'}),
@@ -18,10 +18,7 @@ class AlumnoForm(forms.ModelForm):
             'telefono': forms.TextInput(attrs={'placeholder': 'Ej. 7221234567'}),
             'domicilio': forms.TextInput(attrs={'placeholder': 'Calle, colonia, municipio, C.P.'}),
             'carrera': forms.Select(),
-            'semestre': forms.Select(),
             'modalidad': forms.Select(),
-            'tema': forms.TextInput(attrs={'placeholder': 'ESCRIBE EL TEMA EN MAYÚSCULAS'}),
-            'director': forms.TextInput(attrs={'placeholder': 'Ej. DR., M. EN C., LIC.'}),
             'documento1': forms.ClearableFileInput(),
             'documento2': forms.ClearableFileInput(),
             'documento3': forms.ClearableFileInput(),

@@ -406,6 +406,23 @@ body {
     box-shadow: 0 8px 28px rgba(46,125,50,0.2);
 }
 
+/* ── NIVEL TOGGLE ── */
+.nivel-toggle {
+    display: flex; gap: 8px; margin-bottom: 12px;
+}
+.nivel-btn {
+    padding: 8px 22px; border-radius: 20px; border: 2px solid var(--verde);
+    background: #fff; color: var(--verde); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s var(--ease); font-family: inherit;
+}
+.nivel-btn.active {
+    background: var(--verde); color: #fff;
+    box-shadow: 0 4px 14px rgba(46,125,50,0.28);
+}
+.nivel-btn:not(.active):hover {
+    background: var(--verde-l);
+}
+
 /* ── TÉRMINOS ── */
 .terminos-card {
     background: linear-gradient(135deg, #f9fefb, #f2fef3);
@@ -722,7 +739,7 @@ body {
                     </div>
                     <div class="form-group">
                         <span class="field-num">3. Correo electrónico</span>
-                        <span class="field-label">Correo institucional</span>
+                        <span class="field-label">Correo personal</span>
                         {{ form.correo }}
                         {{ form.correo.errors }}
                     </div>
@@ -731,12 +748,6 @@ body {
                         <span class="field-label">Número de contacto</span>
                         {{ form.telefono }}
                         {{ form.telefono.errors }}
-                    </div>
-                    <div class="form-group">
-                        <span class="field-num">Semestre</span>
-                        <span class="field-label">Semestre actual</span>
-                        {{ form.semestre }}
-                        {{ form.semestre.errors }}
                     </div>
                     <div class="form-group full">
                         <span class="field-num">5. Domicilio</span>
@@ -757,8 +768,12 @@ body {
             <div class="card-body">
                 <div class="form-grid">
                     <div class="form-group full">
-                        <span class="field-num">6. Licenciatura</span>
-                        <span class="field-label">Seleccione la licenciatura a la que pertenece</span>
+                        <span class="field-num">6. Programa educativo</span>
+                        <span class="field-label">Seleccione el nivel y programa al que pertenece</span>
+                        <div class="nivel-toggle" id="nivelToggle">
+                            <button type="button" class="nivel-btn active" id="btnLic" onclick="setNivel('LIC')">Licenciatura</button>
+                            <button type="button" class="nivel-btn" id="btnPG" onclick="setNivel('PG')">Posgrado</button>
+                        </div>
                         {{ form.carrera }}
                         {{ form.carrera.errors }}
                     </div>
@@ -767,18 +782,6 @@ body {
                         <span class="field-label">Seleccione su modalidad</span>
                         {{ form.modalidad }}
                         {{ form.modalidad.errors }}
-                    </div>
-                    <div class="form-group full">
-                        <span class="field-num">8. Tema del trabajo escrito</span>
-                        <span class="field-label">Escriba en letra mayúscula</span>
-                        {{ form.tema }}
-                        {{ form.tema.errors }}
-                    </div>
-                    <div class="form-group full">
-                        <span class="field-num">9. Grado académico</span>
-                        <span class="field-label">Grado académico</span>
-                        {{ form.director }}
-                        {{ form.director.errors }}
                     </div>
                 </div>
             </div>
@@ -840,18 +843,18 @@ body {
             <div class="card-body">
                 <div class="terminos-card">
                     <div class="terminos-title">
-                        <span>📜</span>
-                        Al enviar, el PASANTE confirma que conoce:
+                        <span>🔒</span>
+                        Aviso de privacidad
                     </div>
-                    <ol>
-                        <li>El pasante se compromete a entregar de manera presencial el formato de evaluación profesional, debidamente firmado a la Subdirección Académica para su autorización, adjuntando la impresión de la portada del trabajo con la firma autógrafa del Director que eligió para su modalidad.</li>
-                        <li>Una vez registrado el trabajo escrito, el tema o la opción de evaluación profesional sólo podrán cambiarse a petición del pasante(s) y con la aprobación del Director, con oficio dirigido al Departamento de Evaluación Profesional exponiendo los argumentos para el cambio del mismo.</li>
-                        <li>Una vez aceptado el trabajo escrito, el pasante tendrá un año de vigencia; en caso de vencimiento tendrá que realizar un nuevo registro.</li>
-                    </ol>
+                    <p style="font-size:13.5px;color:#444;line-height:1.7;margin-bottom:1rem;">
+                        Al enviar este formulario, aceptas que la Facultad de Medicina y Química de la UAEMex
+                        recopile tus datos personales con fines exclusivos del trámite de titulación.
+                        Tu información será resguardada con estricta confidencialidad y no será compartida con terceros.
+                    </p>
                     <div class="checkbox-row">
                         {{ form.acepta_terminos }}
                         <label for="{{ form.acepta_terminos.id_for_label }}">
-                            Entiendo y acepto los términos y condiciones
+                            Acepto que mis datos sean recopilados y protegidos por la UAEMex
                         </label>
                     </div>
                     {{ form.acepta_terminos.errors }}
@@ -1103,6 +1106,24 @@ document.querySelectorAll('.ripple-host').forEach(function(el) {
         setTimeout(function() { rip.remove(); }, 750);
     });
 });
+
+// ── Nivel toggle (Licenciatura / Posgrado) ──
+var LIC_VALUES = ['MEDICO','NUTRICION','FISIO','OCUPACIONAL','BIOING'];
+var PG_VALUES  = []; // se llenará con carreras de posgrado
+
+function setNivel(nivel) {
+    var sel = document.getElementById('id_carrera');
+    if (!sel) return;
+    document.getElementById('btnLic').classList.toggle('active', nivel === 'LIC');
+    document.getElementById('btnPG').classList.toggle('active',  nivel === 'PG');
+    var allowed = nivel === 'LIC' ? LIC_VALUES : PG_VALUES;
+    Array.from(sel.options).forEach(function(opt) {
+        if (opt.value === '') { opt.style.display = ''; return; }
+        opt.style.display = allowed.indexOf(opt.value) !== -1 ? '' : 'none';
+    });
+    if (sel.value && allowed.indexOf(sel.value) === -1) sel.value = '';
+}
+setNivel('LIC');
 
 // ── Submit loading state ──
 document.getElementById('mainForm').addEventListener('submit', function() {

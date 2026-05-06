@@ -101,6 +101,7 @@
 
         <div class="divider"></div>
 
+        {% if alumno.facultad != 'QUIMICA' %}
         <div class="carta-box">
             <div class="carta-box-title">📄 Carta de Autorización – Repositorio Institucional UAEMex</div>
             <div class="carta-box-desc">
@@ -116,6 +117,7 @@
                 Descargar Carta de Autorización (PDF prellenado)
             </a>
         </div>
+        {% endif %}
 
         <a href="/" class="btn-inicio">← Volver al inicio</a>
 

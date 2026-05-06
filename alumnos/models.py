@@ -43,7 +43,7 @@ class Alumno(models.Model):
 
     # Datos académicos
     carrera = models.CharField(max_length=20, choices=CARRERAS)
-    semestre = models.IntegerField(choices=SEMESTRES)
+    semestre = models.IntegerField(choices=SEMESTRES, blank=True, null=True)
     modalidad = models.CharField(max_length=30, choices=MODALIDADES, blank=True, null=True)
     tema = models.TextField(blank=True, null=True)
     director = models.CharField(max_length=150, blank=True, null=True)
