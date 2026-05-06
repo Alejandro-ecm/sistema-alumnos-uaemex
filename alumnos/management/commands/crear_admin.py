@@ -7,9 +7,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         User = get_user_model()
-        usuario  = os.environ.get('ADMIN_USER',  'admin')
+        usuario  = os.environ.get('ADMIN_USER',  'adminFMQ')
         email    = os.environ.get('ADMIN_EMAIL', 'admin@uaemex.mx')
-        password = os.environ.get('ADMIN_PASS',  'uaemex2026')
+        password = os.environ.get('ADMIN_PASS',  'FMQ.2026.admin')
 
         user, created = User.objects.get_or_create(username=usuario)
         user.email = email
