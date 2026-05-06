@@ -16,17 +16,53 @@ class Alumno(models.Model):
         ('ING_QUIM',    'Lic. Ingeniería Química'),
         ('ING_PETRO',   'Lic. Ingeniería Petroquímica'),
         # Medicina – Especialidades
-        # (se agregarán)
+        ('M_ESP_01',  'Esp. en Urología'),
+        ('M_ESP_02',  'Esp. en Medicina de Urgencias'),
+        ('M_ESP_03',  'Esp. en Ortopedia'),
+        ('M_ESP_04',  'Esp. en Medicina Crítica en Obstetricia'),
+        ('M_ESP_05',  'Esp. en Cirugía Maxilofacial'),
+        ('M_ESP_06',  'Esp. en Otorrinolaringología'),
+        ('M_ESP_07',  'Esp. en Medicina Interna'),
+        ('M_ESP_08',  'Esp. en Cirugía General'),
+        ('M_ESP_09',  'Esp. en Anestesiología'),
+        ('M_ESP_10',  'Esp. en Psiquiatría'),
+        ('M_ESP_11',  'Esp. en Cirugía Pediátrica'),
+        ('M_ESP_12',  'Esp. en Cirugía Plástica y Reconstructiva'),
+        ('M_ESP_13',  'Esp. en Cirugía Oncológica'),
+        ('M_ESP_14',  'Esp. en Cardiología'),
+        ('M_ESP_15',  'Esp. en Medicina de Rehabilitación'),
+        ('M_ESP_16',  'Esp. en Oncología Médica'),
+        ('M_ESP_17',  'Esp. en Radiooncología'),
+        ('M_ESP_18',  'Esp. en Imagenología Diagnóstica y Terapéutica'),
+        ('M_ESP_19',  'Esp. en Neurocirugía'),
+        ('M_ESP_20',  'Esp. en Pediatría'),
+        ('M_ESP_21',  'Esp. en Ginecología y Obstetricia'),
+        ('M_ESP_22',  'Esp. en Medicina Familiar'),
+        ('M_ESP_23',  'Esp. en Neonatología'),
+        ('M_ESP_24',  'Esp. en Geriatría'),
+        ('M_ESP_25',  'Esp. en Cirugía de Tórax General'),
+        ('M_ESP_26',  'Esp. en Medicina Crítica'),
+        ('M_ESP_27',  'Esp. en Medicina Materno Fetal'),
+        ('M_ESP_28',  'Esp. en Medicina del Trabajo y Ambiental'),
+        ('M_ESP_29',  'Esp. en Epidemiología'),
+        ('M_ESP_30',  'Esp. en Biología de la Reproducción Humana'),
+        ('M_ESP_31',  'Esp. en Medicina de la Actividad Física y el Deporte'),
+        ('M_ESP_32',  'Esp. en Medicina Legal'),
+        ('M_ESP_33',  'Esp. en Salud Pública'),
         # Medicina – Maestrías
-        # (se agregarán)
-        # Medicina – Doctorados
-        # (se agregarán)
-        # Química – Especialidades
-        # (se agregarán)
+        ('M_MST_01',  'Maestría en Ciencias de la Salud'),
+        ('M_MST_02',  'Maestría en Física Médica'),
         # Química – Maestrías
-        # (se agregarán)
+        ('Q_MST_01',  'Maestría en Calidad Ambiental'),
+        ('Q_MST_02',  'Maestría en Ciencia de Materiales'),
+        ('Q_MST_03',  'Maestría en Ciencias Ambientales'),
+        ('Q_MST_04',  'Maestría en Ciencias Químicas'),
+        ('Q_MST_05',  'Maestría en Ciencias y Tecnología Farmacéuticas'),
         # Química – Doctorados
-        # (se agregarán)
+        ('Q_DOC_01',  'Doctorado en Ciencia de Materiales'),
+        ('Q_DOC_02',  'Doctorado en Ciencias Ambientales'),
+        ('Q_DOC_03',  'Doctorado en Ciencias Químicas'),
+        ('Q_DOC_04',  'Doctorado en Ciencias y Tecnología Farmacéuticas'),
     ]
 
     SEMESTRES = [
