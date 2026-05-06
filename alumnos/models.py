@@ -3,11 +3,30 @@ from django.db import models
 class Alumno(models.Model):
 
     CARRERAS = [
-        ('MEDICO', 'Lic. Médico Cirujano'),
-        ('NUTRICION', 'Lic. Nutrición'),
-        ('FISIO', 'Lic. Fisioterapia'),
+        # Medicina – Licenciatura
+        ('MEDICO',      'Lic. Médico Cirujano'),
+        ('NUTRICION',   'Lic. Nutrición'),
+        ('FISIO',       'Lic. Fisioterapia'),
         ('OCUPACIONAL', 'Lic. Terapia Ocupacional'),
-        ('BIOING', 'Lic.Bioingeniería Médica'),
+        ('BIOING',      'Lic. Bioingeniería Médica'),
+        # Química – Licenciatura
+        ('QUIMICA',     'Lic. Química'),
+        ('QUIM_FARM',   'Lic. Química Farmacéutica Biológica'),
+        ('QUIM_ALIM',   'Lic. Química en Alimentos'),
+        ('ING_QUIM',    'Lic. Ingeniería Química'),
+        ('ING_PETRO',   'Lic. Ingeniería Petroquímica'),
+        # Medicina – Especialidades
+        # (se agregarán)
+        # Medicina – Maestrías
+        # (se agregarán)
+        # Medicina – Doctorados
+        # (se agregarán)
+        # Química – Especialidades
+        # (se agregarán)
+        # Química – Maestrías
+        # (se agregarán)
+        # Química – Doctorados
+        # (se agregarán)
     ]
 
     SEMESTRES = [

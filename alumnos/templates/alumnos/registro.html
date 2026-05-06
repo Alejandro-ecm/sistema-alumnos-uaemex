@@ -422,6 +422,19 @@ body {
 .nivel-btn:not(.active):hover {
     background: var(--verde-l);
 }
+.subnivel-toggle {
+    display: flex; gap: 7px; margin-bottom: 12px; flex-wrap: wrap;
+}
+.subnivel-btn {
+    padding: 6px 17px; border-radius: 16px; border: 1.5px solid var(--oro);
+    background: #fff; color: var(--oro); font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s var(--ease); font-family: inherit;
+}
+.subnivel-btn.active {
+    background: var(--oro); color: #fff;
+    box-shadow: 0 3px 12px rgba(184,151,58,0.30);
+}
+.subnivel-btn:not(.active):hover { background: #fdf8ec; }
 
 /* ── TÉRMINOS ── */
 .terminos-card {
@@ -774,6 +787,11 @@ body {
                             <button type="button" class="nivel-btn active" id="btnLic" onclick="setNivel('LIC')">Licenciatura</button>
                             <button type="button" class="nivel-btn" id="btnPG" onclick="setNivel('PG')">Posgrado</button>
                         </div>
+                        <div class="subnivel-toggle" id="subniveles" style="display:none;">
+                            <button type="button" class="subnivel-btn active" id="btnEsp" onclick="setSubnivel('ESP')">Especialidades</button>
+                            <button type="button" class="subnivel-btn" id="btnMst" onclick="setSubnivel('MST')">Maestrías</button>
+                            <button type="button" class="subnivel-btn" id="btnDoc" onclick="setSubnivel('DOC')">Doctorados</button>
+                        </div>
                         {{ form.carrera }}
                         {{ form.carrera.errors }}
                     </div>
@@ -1108,21 +1126,53 @@ document.querySelectorAll('.ripple-host').forEach(function(el) {
 });
 
 // ── Nivel toggle (Licenciatura / Posgrado) ──
-var LIC_VALUES = ['MEDICO','NUTRICION','FISIO','OCUPACIONAL','BIOING'];
-var PG_VALUES  = []; // se llenará con carreras de posgrado
+var FACULTAD = '{{ facultad }}';
 
-function setNivel(nivel) {
+var OPCIONES = {
+    'LIC': {
+        'MEDICINA': ['MEDICO','NUTRICION','FISIO','OCUPACIONAL','BIOING'],
+        'QUIMICA':  ['QUIMICA','QUIM_FARM','QUIM_ALIM','ING_QUIM','ING_PETRO']
+    },
+    'ESP': { 'MEDICINA': [], 'QUIMICA': [] },
+    'MST': { 'MEDICINA': [], 'QUIMICA': [] },
+    'DOC': { 'MEDICINA': [], 'QUIMICA': [] }
+};
+
+var nivelActual = 'LIC';
+var subnivelActual = 'ESP';
+
+function filtrarCarreras(valores) {
     var sel = document.getElementById('id_carrera');
     if (!sel) return;
-    document.getElementById('btnLic').classList.toggle('active', nivel === 'LIC');
-    document.getElementById('btnPG').classList.toggle('active',  nivel === 'PG');
-    var allowed = nivel === 'LIC' ? LIC_VALUES : PG_VALUES;
     Array.from(sel.options).forEach(function(opt) {
         if (opt.value === '') { opt.style.display = ''; return; }
-        opt.style.display = allowed.indexOf(opt.value) !== -1 ? '' : 'none';
+        opt.style.display = valores.indexOf(opt.value) !== -1 ? '' : 'none';
     });
-    if (sel.value && allowed.indexOf(sel.value) === -1) sel.value = '';
+    if (sel.value && valores.indexOf(sel.value) === -1) sel.value = '';
 }
+
+function setNivel(nivel) {
+    nivelActual = nivel;
+    document.getElementById('btnLic').classList.toggle('active', nivel === 'LIC');
+    document.getElementById('btnPG').classList.toggle('active',  nivel === 'PG');
+    var sub = document.getElementById('subniveles');
+    if (nivel === 'LIC') {
+        sub.style.display = 'none';
+        filtrarCarreras(OPCIONES['LIC'][FACULTAD] || []);
+    } else {
+        sub.style.display = 'flex';
+        setSubnivel(subnivelActual);
+    }
+}
+
+function setSubnivel(sub) {
+    subnivelActual = sub;
+    ['ESP','MST','DOC'].forEach(function(k) {
+        document.getElementById('btn'+k.charAt(0)+k.slice(1).toLowerCase()).classList.toggle('active', k === sub);
+    });
+    filtrarCarreras(OPCIONES[sub][FACULTAD] || []);
+}
+
 setNivel('LIC');
 
 // ── Submit loading state ──
