@@ -19,9 +19,9 @@ class AlumnoForm(forms.ModelForm):
             'domicilio': forms.TextInput(attrs={'placeholder': 'Calle, colonia, municipio, C.P.'}),
             'carrera': forms.Select(),
             'modalidad': forms.Select(),
-            'documento1': forms.ClearableFileInput(),
-            'documento2': forms.ClearableFileInput(),
-            'documento3': forms.ClearableFileInput(),
+            'documento1': forms.ClearableFileInput(attrs={'accept': 'application/pdf'}),
+            'documento2': forms.ClearableFileInput(attrs={'accept': 'application/pdf'}),
+            'documento3': forms.ClearableFileInput(attrs={'accept': 'application/pdf'}),
         }
 
 

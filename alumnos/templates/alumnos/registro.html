@@ -818,8 +818,12 @@ body {
                             {{ form.documento1 }}
                             <div class="file-zone-icon">📄</div>
                             <div class="file-zone-num">Documento 1</div>
-                            <div class="file-zone-label">Portada de Protocolo</div>
-                            <div class="file-zone-hint">PDF · NombreCompleto-F1<br>Máx. 10 MB</div>
+                            {% if facultad == 'QUIMICA' %}
+                            <div class="file-zone-label">Recibo de pago</div>
+                            {% else %}
+                            <div class="file-zone-label">Tesis</div>
+                            {% endif %}
+                            <div class="file-zone-hint">Solo PDF · Máx. 10 MB</div>
                             <div class="file-zone-name" id="fname1"></div>
                         </div>
                         {{ form.documento1.errors }}
@@ -829,8 +833,12 @@ body {
                             {{ form.documento2 }}
                             <div class="file-zone-icon">📄</div>
                             <div class="file-zone-num">Documento 2</div>
-                            <div class="file-zone-label">Modalidad de Titulación</div>
-                            <div class="file-zone-hint">PDF · NombreCompleto-F2<br>Máx. 10 MB</div>
+                            {% if facultad == 'QUIMICA' %}
+                            <div class="file-zone-label">Tesis</div>
+                            {% else %}
+                            <div class="file-zone-label">Recibo de pago</div>
+                            {% endif %}
+                            <div class="file-zone-hint">Solo PDF · Máx. 10 MB</div>
                             <div class="file-zone-name" id="fname2"></div>
                         </div>
                         {{ form.documento2.errors }}
@@ -841,8 +849,8 @@ body {
                             {{ form.documento3 }}
                             <div class="file-zone-icon">📎</div>
                             <div class="file-zone-num">Documento 3 (opcional)</div>
-                            <div class="file-zone-label">Archivo complementario</div>
-                            <div class="file-zone-hint">PDF / Word<br>Máx. 10 MB</div>
+                            <div class="file-zone-label">Carta Autor</div>
+                            <div class="file-zone-hint">Solo PDF · Máx. 10 MB</div>
                             <div class="file-zone-name" id="fname3"></div>
                         </div>
                         {{ form.documento3.errors }}
