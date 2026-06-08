@@ -14,8 +14,7 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = [
-    'https://skytechnologieslatam.com',
-    'https://www.skytechnologieslatam.com',
+    'https://titulacion.skytechnologieslatam.com',
     'https://*.railway.app',
     'https://*.up.railway.app',
 ]
