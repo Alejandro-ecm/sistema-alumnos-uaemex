@@ -3,14 +3,21 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Carpeta de datos persistentes (base de datos SQLite + archivos subidos).
+# En local usa BASE_DIR; en Railway define DATA_DIR=/data y monta un Volumen ahí
+# para que los datos NO se borren en cada despliegue.
+DATA_DIR = Path(os.environ.get('DATA_DIR', BASE_DIR))
+
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-4e!z4e&r1@ipwwherj*rvfe2vs1g$21t9@_qa=^lj%b-g+9^qd')
 
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = [
-    'https://sistemabibliotecauaemex.up.railway.app',
+    'https://skytechnologieslatam.com',
+    'https://www.skytechnologieslatam.com',
     'https://*.railway.app',
+    'https://*.up.railway.app',
 ]
 
 INSTALLED_APPS = [
@@ -57,7 +64,7 @@ WSGI_APPLICATION = 'proyecto.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DATA_DIR / 'db.sqlite3',
     }
 }
 
@@ -86,7 +93,7 @@ STORAGES = {
 }
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = DATA_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
