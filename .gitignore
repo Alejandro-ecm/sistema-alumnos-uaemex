@@ -32,3 +32,9 @@ staticfiles/
 # Variables de entorno
 .env
 *.env
+
+# Pesos de YOLO (ultralytics los descarga automáticamente si faltan;
+# solo los usa el script de visión en venv_deteccion, no el sitio Django)
+yolov8n.pt
+yolov8n-seg.pt
+yolov8n-pose.pt

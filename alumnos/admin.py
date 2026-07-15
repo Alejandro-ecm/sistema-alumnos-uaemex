@@ -1,6 +1,9 @@
 from django.contrib import admin
+from django.contrib.auth.models import Group
 from .models import Alumno
 from django.utils.html import mark_safe
+
+admin.site.unregister(Group)
 
 
 class AlumnoAdmin(admin.ModelAdmin):

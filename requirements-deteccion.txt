@@ -1,0 +1,22 @@
+# Dependencias del script de visión (deteccion_libros/vision/capturar.py).
+#
+# Este script NO corre dentro del venv de Django (que usa Python 3.14, ver
+# requirements.txt) porque ultralytics/torch aun no publican wheels para esa
+# version. Se instala en un entorno Python 3.12 aparte:
+#
+#   C:\venv_deteccion\Scripts\python.exe -m pip install -r requirements-deteccion.txt
+#
+# El script escribe directamente a la misma base de datos y carpeta media/
+# del proyecto Django via django.setup(), pero corre como proceso
+# independiente, nunca dentro del ciclo request/response de gunicorn.
+#
+# django-jazzmin se necesita aunque este script nunca sirve el admin: esta en
+# INSTALLED_APPS y django.setup() lo importa igual. pillow lo requiere el
+# ImageField de EventoDeteccion.
+
+ultralytics
+lap>=0.5.12
+opencv-python
+Django>=6.0,<6.1
+django-jazzmin==3.0.4
+pillow==11.2.1

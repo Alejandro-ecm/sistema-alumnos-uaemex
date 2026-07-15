@@ -1,0 +1,38 @@
+[
+    {
+        "nombre": "Webcam-Laptop",
+        "source": 0,
+        "activa": true,
+        "zona_salida": null
+    },
+    {
+        "nombre": "Celular-Entrada",
+        "source": "http://192.168.1.100:8080/video",
+        "activa": true,
+        "zona_salida": null
+    },
+    {
+        "nombre": "Camara-3",
+        "source": null,
+        "activa": false,
+        "zona_salida": null
+    },
+    {
+        "nombre": "Camara-4",
+        "source": null,
+        "activa": false,
+        "zona_salida": null
+    },
+    {
+        "nombre": "Camara-5",
+        "source": null,
+        "activa": false,
+        "zona_salida": null
+    },
+    {
+        "nombre": "Camara-6",
+        "source": null,
+        "activa": false,
+        "zona_salida": null
+    }
+]

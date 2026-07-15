@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'alumnos',
+    'deteccion_libros',
 ]
 
 MIDDLEWARE = [
@@ -74,6 +75,8 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+LOGOUT_REDIRECT_URL = '/admin/login/'
+
 LANGUAGE_CODE = 'es-mx'
 TIME_ZONE = 'America/Mexico_City'
 USE_I18N = True
@@ -99,6 +102,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 JAZZMIN_SETTINGS = {
     "site_title": "UAEMex – Titulación",
     "site_header": "Facultad de Medicina y Química",
+    "site_brand": "UAEMex",
     "welcome_sign": "Bienvenido al panel administrativo",
     "site_logo": "img/logo.JPG",
     "site_logo_classes": "img-circle",
@@ -116,6 +120,15 @@ JAZZMIN_SETTINGS = {
     "related_modal_active": True,
     "order_with_respect_to": ["auth", "alumnos"],
     "copyright": "Facultad de Medicina y Química – UAEMex 2026",
+    "custom_links": {
+        "deteccion_libros": [{
+            "name": "Vista de seguridad",
+            "url": "admin:deteccion_libros_vista_seguridad",
+            "icon": "fas fa-video",
+            "permissions": ["deteccion_libros.view_eventodeteccion"],
+        }],
+    },
+    "hide_models": ["deteccion_libros.eventodeteccion"],
 }
 
 JAZZMIN_UI_TWEAKS = {

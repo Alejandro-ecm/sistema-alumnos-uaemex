@@ -4,186 +4,625 @@
 {% block title %}Panel Administrativo – UAEMex{% endblock %}
 
 {% block extrahead %}
+{{ block.super }}
 <link rel="shortcut icon" href="{% static 'img/logo.JPG' %}?v=4" type="image/jpeg">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-    body, #header, .nav-global { font-family: 'Inter', sans-serif !important; }
-
-    #header {
-        background: #2e7d32 !important;
-        padding: 12px 20px !important;
-        display: flex;
+    /* ===== Menú "Ajustes" (hamburguesa animada) sobre el ícono de usuario de Jazzmin ===== */
+    .ajustes-toggle {
+        display: flex !important;
+        flex-direction: column;
         align-items: center;
-        gap: 12px;
-    }
-
-    #branding h1, #branding h1 a {
-        color: #fff !important;
-        font-size: 16px !important;
-        font-weight: 600 !important;
-    }
-
-    /* Fondo en pantalla de login */
-    body.login {
-        background-image: url("{% static 'img/fondo.JPG.png' %}") !important;
-        background-size: cover !important;
-        background-position: center !important;
-        background-attachment: fixed !important;
-    }
-
-    body.login #container {
-        background: rgba(255,255,255,0.93) !important;
-        border-radius: 14px !important;
-        padding: 2rem !important;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.15) !important;
-    }
-
-    .dashboard-bienvenida {
-        background: linear-gradient(135deg, #2e7d32, #43a047);
-        border-radius: 12px;
-        padding: 2rem;
-        color: white;
-        margin-bottom: 2rem;
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-    }
-
-    .dashboard-bienvenida img {
-        width: 70px;
-        height: 70px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 3px solid rgba(255,255,255,0.4);
-    }
-
-    .dashboard-bienvenida h2 {
-        font-size: 22px;
-        font-weight: 600;
-        margin-bottom: 4px;
-    }
-
-    .dashboard-bienvenida p {
-        font-size: 13px;
-        opacity: 0.85;
-        margin: 0;
-    }
-
-    .accesos-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-
-    .acceso-card {
-        background: #fff;
-        border: 1px solid #c8e6c9;
-        border-radius: 10px;
-        padding: 1.2rem;
-        text-decoration: none;
-        transition: background 0.2s, border-color 0.2s;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .acceso-card:hover {
-        background: #f1fdf3;
-        border-color: #2e7d32;
-        text-decoration: none;
-    }
-
-    .acceso-icon {
-        width: 40px; height: 40px;
-        background: #e8f5e9;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        gap: 5px;
         border-radius: 8px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 20px;
-        flex-shrink: 0;
+        transition: background 0.25s ease, transform 0.2s ease;
     }
 
-    .acceso-texto strong {
+    .ajustes-toggle:hover {
+        background: rgba(0, 0, 0, 0.08);
+        transform: translateY(-1px);
+    }
+
+    .ajustes-bar {
         display: block;
-        font-size: 14px;
-        font-weight: 600;
-        color: #1b5e20;
+        width: 20px;
+        height: 2px;
+        border-radius: 2px;
+        background: currentColor;
+        transition: transform 0.35s cubic-bezier(.68, -0.55, .27, 1.55), opacity 0.2s ease;
     }
 
-    .acceso-texto span {
-        font-size: 12px;
-        color: #81c784;
+    .ajustes-toggle.active .ajustes-bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .ajustes-toggle.active .ajustes-bar:nth-child(2) { opacity: 0; transform: scaleX(0); }
+    .ajustes-toggle.active .ajustes-bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    .ajustes-dropdown.show {
+        animation: ajustesMenuIn 0.28s cubic-bezier(.2, .8, .3, 1.3);
     }
 
-    .seccion-titulo {
-        font-size: 13px;
-        font-weight: 600;
-        color: #388e3c;
+    @keyframes ajustesMenuIn {
+        from { opacity: 0; transform: translateY(-10px) scale(0.94); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .ajustes-dropdown .dropdown-item,
+    .ajustes-dropdown .dropdown-header {
+        opacity: 0;
+        transform: translateX(8px);
+    }
+
+    .ajustes-dropdown.show .dropdown-item,
+    .ajustes-dropdown.show .dropdown-header {
+        animation: ajustesItemIn 0.3s ease forwards;
+    }
+
+    .ajustes-dropdown.show .dropdown-header { animation-delay: 0.02s; }
+    .ajustes-dropdown.show .dropdown-item:nth-of-type(1) { animation-delay: 0.06s; }
+    .ajustes-dropdown.show .dropdown-item:nth-of-type(2) { animation-delay: 0.11s; }
+    .ajustes-dropdown.show .dropdown-item:nth-of-type(3) { animation-delay: 0.16s; }
+    .ajustes-dropdown.show .dropdown-item:nth-of-type(4) { animation-delay: 0.21s; }
+
+    @keyframes ajustesItemIn {
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    .ajustes-dropdown .dropdown-item:hover {
+        background: rgba(46, 125, 50, 0.08);
+    }
+
+    /* =====================================================================
+       REDISEÑO MODERNO DEL PANEL (verde + blanco, animaciones en movimiento)
+    ===================================================================== */
+    :root {
+        --verde: #2e7d32;
+        --verde2: #43a047;
+        --verde3: #1b5e20;
+        --verde4: #388e3c;
+        --oro: #b8973a;
+        --ease: cubic-bezier(.22, 1, .36, 1);
+    }
+
+    body.bg-body-tertiary { background: linear-gradient(180deg, #f3faf4 0%, #eaf5ec 100%) !important; }
+    .app-content-header, .app-content { background: transparent !important; }
+
+    /* ---------- Barra lateral ---------- */
+    #jazzy-sidebar {
+        background: linear-gradient(200deg, var(--verde3) 0%, var(--verde) 55%, var(--verde4) 100%) !important;
+        border-right: none !important;
+        box-shadow: 4px 0 26px rgba(27, 94, 32, 0.28);
+    }
+    .sidebar-brand { background: rgba(0, 0, 0, 0.14); border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+    .sidebar-brand .brand-text { color: #fff !important; font-weight: 700; letter-spacing: .3px; }
+    .user-panel { border-bottom: 1px solid rgba(255, 255, 255, 0.16); padding-bottom: 10px; margin-bottom: 6px; }
+    .user-panel .info a, .user-panel .info span { color: #fff !important; font-weight: 600; }
+    .user-panel .user-profile { color: rgba(255, 255, 255, 0.85) !important; }
+
+    .nav-header {
+        color: rgba(255, 255, 255, 0.65) !important;
+        font-size: 11px;
         text-transform: uppercase;
-        letter-spacing: 0.8px;
-        margin: 1.5rem 0 0.8rem;
-        padding-bottom: 6px;
-        border-bottom: 1px solid #c8e6c9;
+        letter-spacing: 1.2px;
+        font-weight: 700;
+        padding-top: 20px !important;
+    }
+
+    #jazzy-navigation .nav-link {
+        color: rgba(255, 255, 255, 0.9) !important;
+        border-radius: 10px;
+        margin: 3px 10px;
+        padding: 10px 12px !important;
+        position: relative;
+        overflow: hidden;
+        transition: background .35s var(--ease), transform .35s var(--ease), box-shadow .35s ease;
+    }
+    #jazzy-navigation .nav-icon {
+        color: rgba(255, 255, 255, 0.78);
+        transition: transform .4s var(--ease), color .3s ease;
+    }
+    #jazzy-navigation .nav-link:hover {
+        background: rgba(255, 255, 255, 0.16) !important;
+        color: #fff !important;
+        transform: translateX(5px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+    }
+    #jazzy-navigation .nav-link:hover .nav-icon {
+        transform: scale(1.2) rotate(-8deg);
+        color: var(--oro);
+    }
+    #jazzy-navigation .nav-link::before {
+        content: "";
+        position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+        width: 3px; height: 0%;
+        background: var(--oro);
+        border-radius: 0 4px 4px 0;
+        transition: height .3s ease;
+    }
+    #jazzy-navigation .nav-link:hover::before { height: 60%; }
+
+    /* animación de "salto" para las letras del menú lateral */
+    .letra-salto {
+        display: inline-block;
+        opacity: 0;
+        transform: translateY(-16px) scale(.7);
+        animation: letraSalto .6s cubic-bezier(.34, 1.56, .64, 1) forwards;
+    }
+    @keyframes letraSalto {
+        0%   { opacity: 0; transform: translateY(-16px) scale(.7); }
+        55%  { opacity: 1; transform: translateY(4px) scale(1.08); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ---------- Navbar superior ---------- */
+    .app-header.navbar {
+        background: rgba(255, 255, 255, 0.88) !important;
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(46, 125, 50, 0.12) !important;
+        box-shadow: 0 2px 14px rgba(0, 0, 0, 0.05);
+    }
+
+    /* ---------- Tarjetas ---------- */
+    .card {
+        border: none !important;
+        border-radius: 16px !important;
+        box-shadow: 0 6px 22px rgba(27, 94, 32, 0.08) !important;
+        transition: transform .35s var(--ease), box-shadow .35s var(--ease);
+    }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 16px 34px rgba(27, 94, 32, 0.16) !important; }
+    .card-header {
+        background: linear-gradient(120deg, rgba(46, 125, 50, .09), rgba(67, 160, 71, .03)) !important;
+        border-bottom: 1px solid rgba(46, 125, 50, .1) !important;
+        font-weight: 700;
+    }
+    .card-header h5 { color: var(--verde3); }
+
+    /* ---------- Botones Agregar / Modificar ---------- */
+    .btn.addlink, .btn.changelink, .btn.viewlink {
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600;
+        transition: transform .3s var(--ease), filter .3s ease, box-shadow .3s ease;
+    }
+    .btn.addlink { background: linear-gradient(135deg, var(--verde), var(--verde2)) !important; box-shadow: 0 4px 12px rgba(46, 125, 50, .3); }
+    .btn.changelink, .btn.viewlink { background: linear-gradient(135deg, var(--verde3), var(--oro)) !important; box-shadow: 0 4px 12px rgba(184, 151, 58, .3); }
+    .btn.addlink:hover, .btn.changelink:hover, .btn.viewlink:hover { transform: translateY(-2px) scale(1.05); filter: brightness(1.08); }
+
+    /* ---------- Acciones recientes ---------- */
+    .timeline-item { transition: transform .25s ease, box-shadow .25s ease; border-radius: 10px !important; }
+    .timeline > div:hover .timeline-item { transform: translateX(4px); box-shadow: 0 6px 16px rgba(27, 94, 32, .12); }
+    .timeline-header a { color: var(--verde3) !important; font-weight: 700; }
+
+    /* =====================================================================
+       LISTA DE ALUMNOS: tarjetas diferenciadas en vez de tabla plana
+    ===================================================================== */
+    #result_list { border-collapse: separate !important; border-spacing: 0 10px !important; }
+    #result_list thead th {
+        background: transparent !important;
+        border: none !important;
+        color: var(--verde3);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+    #result_list tbody tr {
+        background: #fff;
+        box-shadow: 0 2px 10px rgba(27, 94, 32, .07);
+        transition: transform .25s var(--ease), box-shadow .25s ease;
+    }
+    #result_list tbody tr:hover { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(27, 94, 32, .18); }
+    #result_list tbody td {
+        border-top: none !important;
+        border-bottom: none !important;
+        padding: 13px 14px !important;
+        vertical-align: middle !important;
+    }
+    #result_list tbody td:first-child { border-radius: 12px 0 0 12px; border-left: 5px solid var(--verde2); }
+    #result_list tbody td:last-child { border-radius: 0 12px 12px 0; }
+    #result_list tbody th.field-nombre { background: #fff; padding: 13px 14px !important; vertical-align: middle !important; }
+
+    #result_list td.field-estado select {
+        width: auto !important;
+        min-width: 150px !important;
+        padding: 4px 26px 4px 10px !important;
+    }
+
+    #result_list tbody tr.estado-pendiente td:first-child    { border-left-color: var(--oro); }
+    #result_list tbody tr.estado-en-revision td:first-child  { border-left-color: #1565c0; }
+    #result_list tbody tr.estado-revisado td:first-child     { border-left-color: #00838f; }
+    #result_list tbody tr.estado-aprobado td:first-child     { border-left-color: var(--verde); }
+    #result_list tbody tr.estado-rechazado td:first-child    { border-left-color: #c62828; }
+
+    .alumno-row { display: flex; align-items: center; gap: 10px; }
+    .alumno-avatar {
+        display: flex; align-items: center; justify-content: center;
+        width: 34px; height: 34px; border-radius: 50%;
+        color: #fff; font-weight: 700; font-size: 13px;
+        flex-shrink: 0;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
     }
 </style>
 {% endblock %}
 
-{% block branding %}
-<img src="{% static 'img/logo.JPG' %}" alt="UAEMex"
-     style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.5);">
-<h1 id="site-name">
-    <a href="{% url 'admin:index' %}" style="color:#fff;text-decoration:none;">
-        Panel Administrativo – Facultad de Medicina y Química
-    </a>
-</h1>
+{% block extrajs %}
+{{ block.super }}
+<script>
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+        var menu = document.getElementById('jazzy-usermenu');
+        if (!menu) return;
+        var toggle = menu.previousElementSibling;
+        if (!toggle) return;
+
+        toggle.classList.add('ajustes-toggle');
+        toggle.setAttribute('title', 'Ajustes');
+        toggle.innerHTML = '<span class="ajustes-bar"></span><span class="ajustes-bar"></span><span class="ajustes-bar"></span>';
+
+        menu.classList.add('ajustes-dropdown');
+        var header = menu.querySelector('.dropdown-header');
+        if (header) header.textContent = 'Ajustes';
+
+        var item = toggle.closest('.dropdown') || toggle.parentElement;
+        item.addEventListener('show.bs.dropdown', function () { toggle.classList.add('active'); });
+        item.addEventListener('hide.bs.dropdown', function () { toggle.classList.remove('active'); });
+    });
+})();
+</script>
+
+<script>
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+
+        /* ---- Animación "salto" en las letras del menú lateral ---- */
+        function saltarLetras(el) {
+            if (!el || el.dataset.split) return;
+            var texto = el.textContent;
+            el.textContent = '';
+            texto.split('').forEach(function (ch, i) {
+                var span = document.createElement('span');
+                span.className = 'letra-salto';
+                span.style.animationDelay = (i * 0.03) + 's';
+                span.textContent = ch === ' ' ? ' ' : ch;
+                el.appendChild(span);
+            });
+            el.dataset.split = '1';
+        }
+        document.querySelectorAll('.nav-header, #jazzy-navigation .nav-link p').forEach(saltarLetras);
+
+        /* ---- Lista de Alumnos: avatar con iniciales + color por estado ---- */
+        var tabla = document.getElementById('result_list');
+        if (!tabla) return;
+
+        var claseEstado = {
+            'Pendiente': 'estado-pendiente',
+            'En revisión': 'estado-en-revision',
+            'Revisado': 'estado-revisado',
+            'Aprobado': 'estado-aprobado',
+            'Rechazado': 'estado-rechazado'
+        };
+        var colorEstado = {
+            'Pendiente': '#b8973a',
+            'En revisión': '#1565c0',
+            'Revisado': '#00838f',
+            'Aprobado': '#2e7d32',
+            'Rechazado': '#c62828'
+        };
+
+        function colorDesde(str) {
+            var hash = 0;
+            for (var i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            var hue = Math.abs(hash) % 360;
+            return 'hsl(' + hue + ', 58%, 42%)';
+        }
+        function iniciales(nombre) {
+            var partes = nombre.trim().split(/\s+/);
+            return ((partes[0] ? partes[0][0] : '') + (partes[1] ? partes[1][0] : '')).toUpperCase();
+        }
+
+        tabla.querySelectorAll('tbody tr').forEach(function (tr) {
+            var nombreTd = tr.querySelector('td.field-nombre') || tr.querySelector('th.field-nombre');
+            if (nombreTd && !nombreTd.dataset.enhanced) {
+                var link = nombreTd.querySelector('a') || nombreTd;
+                var nombre = link.textContent.trim();
+                var avatar = document.createElement('span');
+                avatar.className = 'alumno-avatar';
+                avatar.textContent = iniciales(nombre) || '?';
+                avatar.style.background = colorDesde(nombre);
+
+                var wrapper = document.createElement('div');
+                wrapper.className = 'alumno-row';
+                link.parentNode.insertBefore(wrapper, link);
+                wrapper.appendChild(avatar);
+                wrapper.appendChild(link);
+                nombreTd.dataset.enhanced = '1';
+            }
+
+            var estadoTd = tr.querySelector('td.field-estado');
+            if (estadoTd) {
+                var select = estadoTd.querySelector('select');
+
+                function aplicarEstado(valor) {
+                    Object.keys(claseEstado).forEach(function (k) { tr.classList.remove(claseEstado[k]); });
+                    if (claseEstado[valor]) tr.classList.add(claseEstado[valor]);
+                    if (select && colorEstado[valor]) {
+                        select.style.color = colorEstado[valor];
+                        select.style.fontWeight = '700';
+                        select.style.border = 'none';
+                        select.style.background = 'transparent';
+                    }
+                }
+
+                if (select) {
+                    aplicarEstado(select.value);
+                    select.addEventListener('change', function () { aplicarEstado(select.value); });
+                } else {
+                    var texto = estadoTd.textContent.trim();
+                    aplicarEstado(texto);
+                    if (colorEstado[texto]) {
+                        estadoTd.innerHTML = '<span class="estado-badge" style="display:inline-block;padding:4px 12px;border-radius:20px;' +
+                            'font-size:12px;font-weight:700;color:#fff;background:' + colorEstado[texto] + ';">' + texto + '</span>';
+                    }
+                }
+            }
+        });
+    });
+})();
+</script>
 {% endblock %}
 
-{% block content %}
-<div style="padding: 1.5rem 0;">
+{% block footer %}
+{% if not is_popup %}
+<footer class="uaemex-footer">
+    <div class="uaemex-footer-linea-top"></div>
+    <div class="uaemex-footer-container">
+        <div class="uaemex-footer-logo-wrap">
+            <img src="{% static 'img/logo.JPG' %}" alt="UAEMex" class="uaemex-footer-logo">
+        </div>
+        <h2 class="uaemex-footer-titulo">Contáctanos</h2>
+        <hr class="uaemex-footer-divisor">
 
-    <div class="dashboard-bienvenida">
-        <img src="{% static 'img/logo.JPG' %}" alt="UAEMex">
-        <div>
-            <h2>Bienvenido, {{ user.get_full_name|default:user.username }} 👋</h2>
-            <p>Universidad Autónoma del Estado de México &nbsp;·&nbsp; Facultad de Medicina y Química</p>
-            <p style="margin-top:4px;">Sistema de Trámite de Titulación – Registro de No Deuda &nbsp;·&nbsp; UAEMex 2026</p>
+        <div class="uaemex-footer-grid">
+            <div class="uaemex-footer-col">
+                <div class="uaemex-footer-mapa-wrap">
+                    <iframe src="https://www.google.com/maps?q=Universidad+Aut%C3%B3noma+del+Estado+de+M%C3%A9xico,+Toluca&output=embed"
+                            loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+                <p class="uaemex-footer-direccion">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span><strong>Av Paseo Tollocan, C. Jesús Carranza</strong><br>Moderna de la Cruz, Toluca, México C.P. 50180</span>
+                </p>
+                <p class="uaemex-footer-direccion">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span><strong>Universidad Autónoma del Estado de México</strong><br>Instituto Literario # 100. C.P. 50000 Col. Centro</span>
+                </p>
+            </div>
+
+            <div class="uaemex-footer-col">
+                <p class="uaemex-footer-tel">
+                    <span class="uaemex-footer-icono-redondo"><i class="fas fa-phone"></i></span>
+                    <span>+52 722 270 2899</span>
+                </p>
+                <p class="uaemex-footer-tel">
+                    <span class="uaemex-footer-icono-redondo"><i class="fas fa-phone"></i></span>
+                    <span>
+                        <strong>722 226 23 00</strong> – Interior de la República<br>
+                        011 52 722 226 23 00 – USA y Canadá<br>
+                        00 52 722 226 23 00 – Europa y resto del mundo
+                    </span>
+                </p>
+            </div>
+
+            <div class="uaemex-footer-col">
+                <div class="uaemex-footer-iconos">
+                    <span class="uaemex-footer-icono-social uaemex-fb"><i class="fab fa-facebook-f"></i></span>
+                    <span class="uaemex-footer-icono-social uaemex-tiktok"><i class="fab fa-tiktok"></i></span>
+                    <span class="uaemex-footer-icono-social uaemex-ig"><i class="fab fa-instagram"></i></span>
+                    <span class="uaemex-footer-icono-social uaemex-yt"><i class="fab fa-youtube"></i></span>
+                </div>
+                <p class="uaemex-footer-correo">
+                    <span class="uaemex-footer-icono-redondo"><i class="fas fa-envelope"></i></span>
+                    <span>rectoria@uaemex.mx</span>
+                </p>
+                <div class="uaemex-footer-dtic">
+                    <span class="uaemex-footer-dtic-icono"><i class="fas fa-bullseye"></i></span>
+                    <span>
+                        <strong>DTIC</strong><br>
+                        <small>Dirección de Tecnologías de la Información y Comunicaciones</small>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <hr class="uaemex-footer-divisor">
+
+        <div class="uaemex-footer-abajo">
+            <img src="{% static 'img/logo.JPG' %}" alt="UAEMex" class="uaemex-footer-logo uaemex-footer-logo-sm">
+            <h3 class="uaemex-footer-admin">Administración Universitaria</h3>
+            <div class="uaemex-footer-periodo">2025 – 2029</div>
         </div>
     </div>
+</footer>
 
-    <div class="seccion-titulo">Accesos rápidos</div>
-    <div class="accesos-grid">
-        <a href="/admin/alumnos/alumno/" class="acceso-card">
-            <div class="acceso-icon">🎓</div>
-            <div class="acceso-texto">
-                <strong>Alumnos</strong>
-                <span>Ver y gestionar registros</span>
-            </div>
-        </a>
-        <a href="/admin/alumnos/alumno/add/" class="acceso-card">
-            <div class="acceso-icon">➕</div>
-            <div class="acceso-texto">
-                <strong>Nuevo alumno</strong>
-                <span>Agregar registro</span>
-            </div>
-        </a>
-        <a href="/admin/auth/user/" class="acceso-card">
-            <div class="acceso-icon">👤</div>
-            <div class="acceso-texto">
-                <strong>Usuarios</strong>
-                <span>Gestionar accesos</span>
-            </div>
-        </a>
-        <a href="/" class="acceso-card">
-            <div class="acceso-icon">🌐</div>
-            <div class="acceso-texto">
-                <strong>Ver sitio</strong>
-                <span>Ir al formulario público</span>
-            </div>
-        </a>
-    </div>
+<style>
+    .uaemex-footer {
+        background: linear-gradient(180deg, #ffffff 0%, #eef6ef 100%);
+        margin-top: 24px;
+        font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
 
-    <div class="seccion-titulo">Módulos del sistema</div>
-    {{ block.super }}
+    .uaemex-footer-linea-top {
+        height: 4px;
+        background: linear-gradient(90deg, var(--verde3), var(--verde), var(--oro));
+    }
 
-</div>
+    .uaemex-footer-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 28px 24px 20px;
+        text-align: center;
+    }
+
+    .uaemex-footer-logo {
+        width: 46px;
+        height: 46px;
+        object-fit: contain;
+        border-radius: 50%;
+    }
+
+    .uaemex-footer-titulo {
+        color: var(--verde3);
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: 4px;
+        margin: 10px 0 14px;
+    }
+
+    .uaemex-footer-divisor {
+        border: none;
+        border-top: 1px solid rgba(46, 125, 50, .2);
+        margin: 18px 0;
+    }
+
+    .uaemex-footer-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        text-align: left;
+    }
+
+    @media (max-width: 900px) {
+        .uaemex-footer-grid { grid-template-columns: 1fr; }
+    }
+
+    .uaemex-footer-mapa-wrap {
+        width: 100%;
+        height: 180px;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid rgba(46, 125, 50, .25);
+        margin-bottom: 12px;
+    }
+
+    .uaemex-footer-mapa-wrap iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+    }
+
+    .uaemex-footer-direccion {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 13px;
+        color: #444;
+        margin: 0 0 12px;
+        line-height: 1.4;
+    }
+
+    .uaemex-footer-direccion i {
+        color: #d23c5b;
+        margin-top: 3px;
+    }
+
+    .uaemex-footer-tel {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: 13px;
+        color: #333;
+        margin: 0 0 18px;
+        line-height: 1.5;
+    }
+
+    .uaemex-footer-icono-redondo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--verde);
+        color: #fff;
+        flex-shrink: 0;
+        font-size: 13px;
+    }
+
+    .uaemex-footer-iconos {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .uaemex-footer-icono-social {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        color: #fff;
+        font-size: 15px;
+    }
+
+    .uaemex-fb { background: #1877f2; }
+    .uaemex-tiktok { background: #000; }
+    .uaemex-ig { background: radial-gradient(circle at 30% 110%, #fdf497, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
+    .uaemex-yt { background: #ff0000; }
+
+    .uaemex-footer-correo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: #333;
+        margin: 0 0 16px;
+    }
+
+    .uaemex-footer-dtic {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #eef6ef;
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 12px;
+        color: #333;
+    }
+
+    .uaemex-footer-dtic-icono {
+        color: var(--verde3);
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .uaemex-footer-abajo {
+        text-align: center;
+        padding-top: 4px;
+    }
+
+    .uaemex-footer-logo-sm {
+        width: 38px;
+        height: 38px;
+    }
+
+    .uaemex-footer-admin {
+        color: var(--verde3);
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: 3px;
+        margin: 10px 0 6px;
+    }
+
+    .uaemex-footer-periodo {
+        display: inline-block;
+        color: var(--oro);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        padding-bottom: 6px;
+        border-bottom: 2px solid var(--oro);
+        margin-bottom: 16px;
+    }
+</style>
+{% endif %}
 {% endblock %}

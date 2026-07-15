@@ -5,12 +5,64 @@
 {{ block.super }}
 <link rel="shortcut icon" href="{% static 'img/logo.JPG' %}?v=6" type="image/jpeg">
 <style>
-    body {
-        background-image: url("{% static 'img/fondo.JPG.png' %}") !important;
-        background-size: cover !important;
-        background-position: center top !important;
-        background-attachment: fixed !important;
-        background-repeat: no-repeat !important;
+    @keyframes blobMove1 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        33%      { transform: translate(60px, -40px) scale(1.2); }
+        66%      { transform: translate(-40px, 30px) scale(0.9); }
+    }
+    @keyframes blobMove2 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50%      { transform: translate(-70px, 40px) scale(1.25); }
+    }
+    @keyframes veilShimmer {
+        0%   { background-position: -150% 0; }
+        100% { background-position: 250% 0; }
+    }
+    @keyframes cardIn {
+        from { opacity: 0; transform: translateY(50px) scale(0.9); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes fieldIn {
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    body.login-page {
+        background-color: #eaf5ec !important;
+        background-image:
+            url("{% static 'img/fondo.JPG.png' %}"),
+            radial-gradient(circle at 20% 25%, rgba(67, 160, 71, 0.25), transparent 45%),
+            radial-gradient(circle at 82% 78%, rgba(184, 151, 58, 0.22), transparent 50%),
+            linear-gradient(135deg, #eafaf1, #dcf0e1) !important;
+        background-size: cover, cover, cover, cover !important;
+        background-position: center top, center, center, center !important;
+        background-attachment: fixed, fixed, fixed, fixed !important;
+        background-repeat: no-repeat, no-repeat, no-repeat, no-repeat !important;
+        overflow-x: hidden;
+        position: relative;
+    }
+
+    body.login-page::before,
+    body.login-page::after {
+        content: "";
+        position: fixed;
+        width: 520px;
+        height: 520px;
+        border-radius: 50%;
+        filter: blur(80px);
+        z-index: 0;
+        pointer-events: none;
+    }
+    body.login-page::before {
+        top: -140px;
+        left: -140px;
+        background: radial-gradient(circle, rgba(67, 160, 71, 0.55), transparent 70%);
+        animation: blobMove1 14s ease-in-out infinite;
+    }
+    body.login-page::after {
+        bottom: -160px;
+        right: -140px;
+        background: radial-gradient(circle, rgba(184, 151, 58, 0.45), transparent 70%);
+        animation: blobMove2 16s ease-in-out infinite;
     }
 
     /* Oculta el logo gigante que pone Jazzmin */
@@ -18,11 +70,149 @@
         display: none !important;
     }
 
-    #container {
-        background: rgba(255,255,255,0.93) !important;
+    .login-box {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        max-width: 460px;
+        animation: cardIn 0.8s cubic-bezier(.22, 1, .36, 1) both;
+    }
+
+    .login-box .card {
+        background: rgba(255, 255, 255, 0.5) !important;
+        backdrop-filter: blur(24px) saturate(160%);
+        -webkit-backdrop-filter: blur(24px) saturate(160%);
+        border: 1px solid rgba(255, 255, 255, 0.65) !important;
+        border-radius: 26px !important;
+        box-shadow: 0 24px 60px rgba(27, 94, 32, 0.28), 0 4px 18px rgba(0, 0, 0, 0.08) !important;
+        overflow: hidden;
+        position: relative;
+    }
+
+    /* velo blanco animado que se desliza sobre la tarjeta */
+    .login-box .card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.6) 48%, transparent 65%);
+        background-size: 250% 100%;
+        animation: veilShimmer 6s ease-in-out infinite;
+        pointer-events: none;
+    }
+
+    .login-card-body {
+        padding: 50px 42px !important;
+        position: relative;
+        z-index: 1;
+    }
+
+    .login-box-msg {
+        font-size: 22px !important;
+        font-weight: 700 !important;
+        color: #1b5e20 !important;
+        margin-bottom: 30px !important;
+        opacity: 0;
+        transform: translateY(-12px);
+        animation: fieldIn 0.6s ease 0.15s forwards;
+    }
+
+    .login-card-body .input-group {
+        opacity: 0;
+        transform: translateY(16px);
+        animation: fieldIn 0.55s ease forwards;
+        margin-bottom: 22px !important;
+    }
+    .login-card-body .input-group:nth-of-type(1) { animation-delay: 0.25s; }
+    .login-card-body .input-group:nth-of-type(2) { animation-delay: 0.35s; }
+
+    .login-card-body .form-control {
+        height: 54px !important;
+        font-size: 15px !important;
+        border-radius: 14px 0 0 14px !important;
+        border: 2px solid rgba(46, 125, 50, 0.2) !important;
+        background: rgba(255, 255, 255, 0.8) !important;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+    }
+    .login-card-body .form-control:focus {
+        border-color: #43a047 !important;
+        box-shadow: 0 0 0 4px rgba(67, 160, 71, 0.18) !important;
+        background: #fff !important;
+    }
+
+    .login-card-body .input-group-text {
+        border-radius: 0 14px 14px 0 !important;
+        border: 2px solid rgba(46, 125, 50, 0.2) !important;
+        border-left: none !important;
+        background: rgba(255, 255, 255, 0.8) !important;
+        color: #2e7d32 !important;
+        transition: all 0.3s ease;
+    }
+    .login-card-body .input-group:focus-within .input-group-text {
+        border-color: #43a047 !important;
+        color: #1b5e20 !important;
+        transform: scale(1.08);
+    }
+
+    .login-card-body .mb-3.text-center {
+        opacity: 0;
+        transform: translateY(14px);
+        animation: fieldIn 0.55s ease 0.45s forwards;
+    }
+    .login-card-body .mb-3.text-center a {
+        color: #2e7d32 !important;
+        font-weight: 600;
+        transition: color 0.25s ease;
+    }
+    .login-card-body .mb-3.text-center a:hover {
+        color: #1b5e20 !important;
+        text-decoration: underline;
+    }
+
+    .login-card-body .d-grid {
+        opacity: 0;
+        transform: translateY(16px);
+        animation: fieldIn 0.55s ease 0.55s forwards;
+    }
+
+    .login-card-body .btn {
+        background: linear-gradient(135deg, #2e7d32, #43a047) !important;
+        border: none !important;
+        height: 54px !important;
         border-radius: 14px !important;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
-        margin-top: 15vh !important;
+        font-size: 17px !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.4px;
+        box-shadow: 0 12px 28px rgba(46, 125, 50, 0.38) !important;
+        transition: transform 0.3s cubic-bezier(.34, 1.56, .64, 1), box-shadow 0.3s ease, background 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .login-card-body .btn:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 18px 36px rgba(46, 125, 50, 0.48) !important;
+        background: linear-gradient(135deg, #388e3c, #66bb6a) !important;
+    }
+    .login-card-body .btn:active {
+        transform: translateY(-1px) scale(0.99);
+    }
+    .login-card-body .btn::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -75%;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+        transform: skewX(-20deg);
+        transition: left 0.6s ease;
+    }
+    .login-card-body .btn:hover::after {
+        left: 130%;
+    }
+
+    @media (max-width: 480px) {
+        .login-box { max-width: 92%; }
+        .login-card-body { padding: 38px 26px !important; }
     }
 </style>
 {% endblock %}

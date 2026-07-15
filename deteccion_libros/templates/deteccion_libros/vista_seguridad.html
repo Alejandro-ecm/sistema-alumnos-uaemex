@@ -1,0 +1,725 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Vista de Seguridad Biblioteca UAEMex{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    :root {
+        --vs-cian: #00e5ff;
+        --vs-verde: #39ff9d;
+        --vs-rojo: #ff3b5c;
+        --vs-fondo: #060a0d;
+        --vs-panel: #0a1015;
+        --vs-borde: #16333a;
+    }
+
+    .app-content-header {
+        display: none !important;
+    }
+
+    .app-content {
+        padding-top: 0 !important;
+    }
+
+    .app-content .container-fluid {
+        padding-top: 0 !important;
+    }
+
+    .vs-wrap {
+        padding: 0 0 24px;
+        font-family: 'Consolas', 'JetBrains Mono', 'Courier New', monospace;
+    }
+
+    .vs-wrap .row {
+        margin-top: 0 !important;
+    }
+
+    .vs-header {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-bottom: 46px;
+    }
+
+    #jazzy-navbar {
+        position: relative !important;
+    }
+
+    .vs-navbar-titulo {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        color: #1f9d5a;
+        font-weight: 800;
+        font-size: 17px;
+        letter-spacing: .5px;
+        font-family: 'Consolas', 'JetBrains Mono', 'Courier New', monospace;
+        white-space: nowrap;
+        pointer-events: none;
+        animation: vs-navbar-salto 1.4s ease-in-out infinite;
+    }
+
+    @keyframes vs-navbar-salto {
+        0%, 100% { transform: translate(-50%, -50%); }
+        50% { transform: translate(-50%, calc(-50% - 6px)); }
+    }
+
+    @media (max-width: 900px) {
+        .vs-navbar-titulo { display: none; }
+    }
+
+    .vs-titulo-imagen-wrap {
+        width: 100%;
+        height: 260px;
+        overflow: hidden;
+        border-radius: 12px;
+        border: 1px solid var(--vs-borde);
+        box-shadow: 0 6px 22px rgba(0,0,0,.4);
+    }
+
+    .vs-titulo-imagen {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center 42%;
+        display: block;
+        animation: vs-zoom-inout 9s ease-in-out infinite alternate;
+        will-change: transform;
+    }
+
+    @keyframes vs-zoom-inout {
+        0%   { transform: scale(1); }
+        100% { transform: scale(1.12); }
+    }
+
+    .vs-header-fila {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .vs-header-botones {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .vs-contador {
+        font-size: 12px;
+        color: #fff;
+        background: #1f9d5a;
+        border: 1px solid rgba(57,255,157,.5);
+        box-shadow: 0 0 8px rgba(57,255,157,.25);
+        border-radius: 4px;
+        padding: 6px 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+
+    .vs-contador .num {
+        font-size: 16px;
+    }
+
+    .vs-alerta {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        color: #fff;
+        background: rgba(255,59,92,.18);
+        border: 1px solid var(--vs-rojo);
+        box-shadow: 0 0 10px rgba(255,59,92,.35);
+        border-radius: 4px;
+        padding: 6px 14px;
+        animation: vs-alerta-parpadeo 1s infinite;
+    }
+
+    .vs-alerta.activa { display: flex; }
+
+    @keyframes vs-alerta-parpadeo {
+        0%, 100% { background: rgba(255,59,92,.18); box-shadow: 0 0 10px rgba(255,59,92,.35); }
+        50% { background: rgba(255,59,92,.4); box-shadow: 0 0 16px rgba(255,59,92,.6); }
+    }
+
+    .vs-btn {
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        color: #fff;
+        background: #1f9d5a;
+        border: 1px solid rgba(57,255,157,.5);
+        border-radius: 4px;
+        padding: 7px 14px;
+        cursor: pointer;
+        box-shadow: 0 0 8px rgba(57,255,157,.25);
+        transition: background .15s, box-shadow .15s;
+    }
+
+    .vs-btn:hover {
+        background: #24b869;
+        box-shadow: 0 0 12px rgba(57,255,157,.45);
+    }
+
+    .vs-btn.activo {
+        background: #17824a;
+        box-shadow: 0 0 10px rgba(57,255,157,.5);
+    }
+
+    .vs-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+
+    @media (max-width: 1100px) {
+        .vs-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 700px) {
+        .vs-grid { grid-template-columns: 1fr; }
+    }
+
+    .vs-panel {
+        background: var(--vs-panel);
+        border: 1px solid var(--vs-borde);
+        border-radius: 6px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 4px 18px rgba(0,0,0,.55);
+        transition: box-shadow .2s, border-color .2s;
+    }
+
+    .vs-panel.en-vivo {
+        border-color: rgba(57,255,157,.4);
+        box-shadow: 0 0 16px rgba(57,255,157,.12), 0 4px 18px rgba(0,0,0,.55);
+    }
+
+    .vs-panel.apagada {
+        border-color: rgba(255,59,92,.35);
+    }
+
+    /* esquinas estilo mira/HUD */
+    .vs-panel .vs-esquina {
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--vs-cian);
+        opacity: .55;
+        z-index: 3;
+        pointer-events: none;
+    }
+    .vs-panel .vs-esquina.tl { top: 4px; left: 4px; border-right: none; border-bottom: none; }
+    .vs-panel .vs-esquina.tr { top: 4px; right: 4px; border-left: none; border-bottom: none; }
+    .vs-panel .vs-esquina.bl { bottom: 4px; left: 4px; border-right: none; border-top: none; }
+    .vs-panel .vs-esquina.br { bottom: 4px; right: 4px; border-left: none; border-top: none; }
+
+    .vs-panel .vs-video-wrap {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: #030507;
+        overflow: hidden;
+    }
+
+    .vs-panel .vs-video-wrap::after {
+        /* barrido de escaneo sutil, look CCTV/HUD */
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(0deg, rgba(0,229,255,.035) 0px, rgba(0,229,255,.035) 1px, transparent 1px, transparent 3px);
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    .vs-panel .vs-video {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+        transition: filter .2s, opacity .2s;
+    }
+
+    .vs-panel.apagada .vs-video,
+    .vs-panel.apagada .vs-placeholder {
+        filter: grayscale(1) brightness(.35);
+        opacity: .6;
+    }
+
+    .vs-panel .vs-placeholder {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: #2e4a4f;
+        background: repeating-linear-gradient(45deg, #060a0d, #060a0d 10px, #081014 10px, #081014 20px);
+    }
+
+    .vs-panel .vs-placeholder i {
+        font-size: 26px;
+    }
+
+    .vs-panel .vs-placeholder span {
+        font-size: 11px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+
+    .vs-barra {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 7px 12px;
+        background: linear-gradient(180deg, rgba(0,0,0,.85), rgba(0,0,0,0));
+        pointer-events: none;
+        z-index: 4;
+    }
+
+    .vs-nombre {
+        color: #eafcff;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: .5px;
+        text-shadow: 0 1px 3px rgba(0,0,0,.8);
+    }
+
+    .vs-estado {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        color: #eee;
+        text-shadow: 0 1px 3px rgba(0,0,0,.8);
+    }
+
+    .vs-estado .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #555;
+        box-shadow: 0 0 6px #555;
+    }
+
+    .vs-panel.en-vivo .vs-estado .dot {
+        background: var(--vs-verde);
+        box-shadow: 0 0 8px var(--vs-verde);
+        animation: vs-pulse 1.4s infinite;
+    }
+
+    .vs-panel.sin-senal .vs-estado .dot,
+    .vs-panel.apagada .vs-estado .dot {
+        background: var(--vs-rojo);
+        box-shadow: 0 0 8px var(--vs-rojo);
+    }
+
+    @keyframes vs-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: .4; }
+    }
+
+    .vs-pie {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 10px;
+        font-size: 11px;
+        color: #5f8b93;
+        background: #071013;
+        border-top: 1px solid var(--vs-borde);
+    }
+
+    .vs-pie .vs-fuente {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+    }
+
+    .vs-toggle {
+        flex-shrink: 0;
+        font-family: inherit;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        border-radius: 3px;
+        padding: 4px 10px;
+        cursor: pointer;
+        border: 1px solid;
+        background: transparent;
+    }
+
+    .vs-toggle.encender {
+        color: var(--vs-verde);
+        border-color: rgba(57,255,157,.4);
+    }
+    .vs-toggle.encender:hover { background: rgba(57,255,157,.12); }
+
+    .vs-toggle.apagar {
+        color: var(--vs-rojo);
+        border-color: rgba(255,59,92,.4);
+    }
+    .vs-toggle.apagar:hover { background: rgba(255,59,92,.12); }
+
+    /* panel de configuración de cámaras */
+    .vs-config {
+        display: none;
+        margin-bottom: 18px;
+        background: var(--vs-panel);
+        border: 1px solid var(--vs-borde);
+        border-radius: 6px;
+        padding: 16px 18px;
+    }
+
+    .vs-config.abierto { display: block; }
+
+    .vs-config h2 {
+        color: var(--vs-cian);
+        font-size: 14px;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        margin: 0 0 6px;
+    }
+
+    .vs-config p.vs-ayuda {
+        color: #6b8d93;
+        font-size: 12px;
+        line-height: 1.6;
+        margin: 0 0 14px;
+    }
+
+    .vs-config table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+    .vs-config th {
+        text-align: left;
+        color: #5f8b93;
+        text-transform: uppercase;
+        font-size: 10px;
+        letter-spacing: .5px;
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--vs-borde);
+    }
+
+    .vs-config td {
+        padding: 6px 8px;
+        border-bottom: 1px solid #10191d;
+        color: #cdeef2;
+    }
+
+    .vs-config input[type=text] {
+        width: 100%;
+        font-family: inherit;
+        font-size: 12px;
+        background: #030507;
+        border: 1px solid var(--vs-borde);
+        color: #eafcff;
+        border-radius: 3px;
+        padding: 5px 8px;
+    }
+
+    .vs-config input[type=checkbox] {
+        transform: scale(1.15);
+    }
+
+    .vs-config .vs-fila-msg {
+        font-size: 10px;
+        color: var(--vs-verde);
+        margin-left: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="vs-wrap">
+    <div class="vs-header">
+        <div class="vs-titulo-imagen-wrap">
+            <img src="{% static 'img/vs_encabezado.jpg' %}" alt="Cámara de seguridad" class="vs-titulo-imagen">
+        </div>
+        <div class="vs-header-fila">
+            <div class="vs-header-botones">
+                <div class="vs-alerta" id="vs-alerta">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    <span id="vs-alerta-texto"></span>
+                </div>
+                <div class="vs-contador" id="vs-contador-personas">
+                    <i class="fas fa-users"></i>
+                    <span class="num" id="vs-contador-num">0</span>
+                    <span>personas en la biblioteca</span>
+                </div>
+                <button type="button" class="vs-btn" id="vs-btn-config">
+                    <i class="fas fa-satellite-dish"></i> Conectar / configurar cámaras
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="vs-config" id="vs-config">
+        <h2>Fuentes de cámara</h2>
+        <p class="vs-ayuda">
+            <strong>Celular:</strong> instala una app de cámara IP (ej. "IP Webcam" en Android),
+            abre "Iniciar servidor" y copia la URL que muestra (ej. <code>http://192.168.1.50:8080/video</code>)
+            en el campo "Fuente" de una fila, marca "Activa" y guarda.<br>
+            <strong>Cámaras de la escuela:</strong> cuando estén disponibles, pon aquí su URL RTSP/HTTP
+            (ej. <code>rtsp://usuario:clave@192.168.1.20/stream1</code>) de la misma forma.
+            No hace falta reiniciar nada: el sistema detecta el cambio solo en unos segundos.
+        </p>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:22%">Nombre</th>
+                    <th>Fuente (0 = webcam, URL de celular, o RTSP)</th>
+                    <th style="width:8%">Activa</th>
+                    <th style="width:14%"></th>
+                </tr>
+            </thead>
+            <tbody id="vs-config-filas">
+                {% for cam in camaras %}
+                <tr data-fila-nombre="{{ cam.nombre }}">
+                    <td>{{ cam.nombre }}</td>
+                    <td><input type="text" class="vs-input-fuente" value="{{ cam.source|default_if_none:'' }}"></td>
+                    <td><input type="checkbox" class="vs-input-activa" {% if cam.activa %}checked{% endif %}></td>
+                    <td>
+                        <button type="button" class="vs-btn vs-guardar-fila">Guardar</button>
+                        <span class="vs-fila-msg"></span>
+                    </td>
+                </tr>
+                {% endfor %}
+                <tr data-fila-nombre="">
+                    <td><input type="text" class="vs-input-nombre" placeholder="Ej. Celular-Patio"></td>
+                    <td><input type="text" class="vs-input-fuente" placeholder="http://192.168.1.xx:8080/video"></td>
+                    <td><input type="checkbox" class="vs-input-activa" checked></td>
+                    <td>
+                        <button type="button" class="vs-btn vs-guardar-fila">Agregar cámara</button>
+                        <span class="vs-fila-msg"></span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="vs-grid">
+        {% for cam in camaras %}
+        <div class="vs-panel {% if cam.activa %}sin-senal{% endif %}" data-camara="{{ cam.nombre }}" data-activa="{{ cam.activa|yesno:'1,0' }}">
+            <span class="vs-esquina tl"></span>
+            <span class="vs-esquina tr"></span>
+            <span class="vs-esquina bl"></span>
+            <span class="vs-esquina br"></span>
+
+            <div class="vs-video-wrap">
+                {% if cam.activa %}
+                    <img class="vs-video"
+                         src="http://127.0.0.1:{{ puerto_stream }}/stream/{{ cam.nombre|urlencode }}"
+                         alt="{{ cam.nombre }}"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="vs-placeholder" style="display:none;">
+                        <i class="fas fa-video-slash"></i>
+                        <span>Sin señal</span>
+                    </div>
+                {% else %}
+                    <div class="vs-placeholder">
+                        <i class="fas fa-video-slash"></i>
+                        <span>No configurada</span>
+                    </div>
+                {% endif %}
+
+                <div class="vs-barra">
+                    <span class="vs-nombre">{{ cam.nombre }}</span>
+                    <span class="vs-estado">
+                        <span class="dot"></span>
+                        <span class="vs-estado-texto">{% if cam.activa %}Conectando{% else %}Inactiva{% endif %}</span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="vs-pie">
+                <span class="vs-fuente">{% if cam.source is None %}Sin fuente asignada{% else %}{{ cam.source }}{% endif %}</span>
+                {% if cam.activa %}
+                <button type="button" class="vs-toggle apagar" data-accion="apagar">Apagar</button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+(function () {
+    var PUERTO = {{ puerto_stream }};
+    var URL_ESTADO = 'http://127.0.0.1:' + PUERTO + '/estado';
+    var URL_CONTROL = 'http://127.0.0.1:' + PUERTO + '/control/';
+    var URL_GUARDAR = "{% url 'admin:deteccion_libros_guardar_camara' %}";
+
+    function csrfToken() {
+        var m = document.cookie.match(/csrftoken=([^;]+)/);
+        return m ? m[1] : '';
+    }
+
+    function actualizar() {
+        fetch(URL_ESTADO, { cache: 'no-store' })
+            .then(function (r) { return r.json(); })
+            .then(function (estado) {
+                var totalPersonas = 0;
+                var alertaActiva = null;
+                document.querySelectorAll('.vs-panel[data-activa="1"]').forEach(function (panel) {
+                    var nombre = panel.getAttribute('data-camara');
+                    var info = estado[nombre];
+                    var conectada = !!(info && info.conectada);
+                    var pausada = !!(info && info.pausada);
+                    aplicarEstadoPanel(panel, conectada, pausada);
+                    if (info && conectada && !pausada) {
+                        totalPersonas += info.personas || 0;
+                        if (!alertaActiva && info.alerta) {
+                            alertaActiva = { camara: nombre, texto: info.alerta.texto };
+                        }
+                    }
+                });
+                document.getElementById('vs-contador-num').textContent = totalPersonas;
+                mostrarAlerta(alertaActiva);
+            })
+            .catch(function () {
+                document.querySelectorAll('.vs-panel[data-activa="1"]').forEach(function (panel) {
+                    aplicarEstadoPanel(panel, false, false);
+                });
+                mostrarAlerta(null);
+            });
+    }
+
+    function mostrarAlerta(alerta) {
+        var caja = document.getElementById('vs-alerta');
+        var texto = document.getElementById('vs-alerta-texto');
+        if (alerta) {
+            texto.textContent = alerta.texto + ' (' + alerta.camara + ')';
+            caja.classList.add('activa');
+        } else {
+            caja.classList.remove('activa');
+        }
+    }
+
+    function aplicarEstadoPanel(panel, conectada, pausada) {
+        panel.classList.toggle('en-vivo', conectada && !pausada);
+        panel.classList.toggle('sin-senal', !conectada && !pausada);
+        panel.classList.toggle('apagada', pausada);
+
+        var texto = panel.querySelector('.vs-estado-texto');
+        if (texto) {
+            texto.textContent = pausada ? 'Apagada' : (conectada ? 'En vivo' : 'Sin señal');
+        }
+
+        var boton = panel.querySelector('.vs-toggle');
+        if (boton) {
+            boton.textContent = pausada ? 'Encender' : 'Apagar';
+            boton.setAttribute('data-accion', pausada ? 'encender' : 'apagar');
+            boton.classList.toggle('apagar', !pausada);
+            boton.classList.toggle('encender', pausada);
+        }
+    }
+
+    document.querySelectorAll('.vs-toggle').forEach(function (boton) {
+        boton.addEventListener('click', function () {
+            var panel = boton.closest('.vs-panel');
+            var nombre = panel.getAttribute('data-camara');
+            var accion = boton.getAttribute('data-accion');
+            fetch(URL_CONTROL + encodeURIComponent(nombre) + '/' + accion, { cache: 'no-store' })
+                .then(function () { setTimeout(actualizar, 300); })
+                .catch(function () {});
+        });
+    });
+
+    var botonConfig = document.getElementById('vs-btn-config');
+    var panelConfig = document.getElementById('vs-config');
+    botonConfig.addEventListener('click', function () {
+        panelConfig.classList.toggle('abierto');
+    });
+
+    document.querySelectorAll('.vs-guardar-fila').forEach(function (boton) {
+        boton.addEventListener('click', function () {
+            var fila = boton.closest('tr');
+            var nombreExistente = fila.getAttribute('data-fila-nombre');
+            var inputNombre = fila.querySelector('.vs-input-nombre');
+            var nombre = nombreExistente || (inputNombre ? inputNombre.value.trim() : '');
+            var fuente = fila.querySelector('.vs-input-fuente').value.trim();
+            var activa = fila.querySelector('.vs-input-activa').checked;
+            var msg = fila.querySelector('.vs-fila-msg');
+
+            if (!nombre || !fuente) {
+                msg.style.color = '#ff3b5c';
+                msg.textContent = 'Falta nombre o fuente';
+                return;
+            }
+
+            var datos = new URLSearchParams();
+            datos.set('nombre', nombre);
+            datos.set('source', fuente);
+            datos.set('activa', activa ? '1' : '0');
+
+            fetch(URL_GUARDAR, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken(),
+                },
+                body: datos.toString(),
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    msg.style.color = data.ok ? '#39ff9d' : '#ff3b5c';
+                    msg.textContent = data.ok ? 'Guardado, actualizando...' : (data.error || 'Error');
+                    if (data.ok) {
+                        setTimeout(function () { window.location.reload(); }, 900);
+                    }
+                })
+                .catch(function () {
+                    msg.style.color = '#ff3b5c';
+                    msg.textContent = 'Error de conexión';
+                });
+        });
+    });
+
+    actualizar();
+    setInterval(actualizar, 3000);
+})();
+</script>
+<script>
+(function () {
+    var navbar = document.getElementById('jazzy-navbar');
+    if (navbar && !document.querySelector('.vs-navbar-titulo')) {
+        var titulo = document.createElement('div');
+        titulo.className = 'vs-navbar-titulo';
+        titulo.innerHTML = '<i class="fas fa-video"></i> Vista de Seguridad Biblioteca UAEMex';
+        navbar.appendChild(titulo);
+    }
+})();
+</script>
+{% endblock %}
