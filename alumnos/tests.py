@@ -1,7 +1,15 @@
+import csv
+import datetime
+import io
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
+
+from catalogo.models import Ejemplar, RegistroBibliografico
+from circulacion.models import Prestamo
 
 from .models import Alumno, ImpresionConstancia
 
@@ -57,6 +65,11 @@ class PermisosTests(TestCase):
         )
         self.mant.groups.add(Group.objects.get(name='Mantenimiento'))
 
+        self.biblio = User.objects.create_user(
+            username='biblio1', password='clave-segura-123', is_staff=True
+        )
+        self.biblio.groups.add(Group.objects.get(name='Bibliotecario'))
+
         self.sin_grupo = User.objects.create_user(
             username='staffsin', password='clave-segura-123', is_staff=True
         )
@@ -85,6 +98,44 @@ class PermisosTests(TestCase):
         self.client.login(username='staffsin', password='clave-segura-123')
         response = self.client.get(reverse('admin:deteccion_libros_panel_mantenimiento'))
         self.assertEqual(response.status_code, 403)
+
+    def test_bibliotecario_accede_al_listado_de_registros_bibliograficos(self):
+        self.client.login(username='biblio1', password='clave-segura-123')
+        response = self.client.get(reverse('admin:catalogo_registrobibliografico_changelist'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_bibliotecario_accede_al_listado_de_prestamos(self):
+        self.client.login(username='biblio1', password='clave-segura-123')
+        response = self.client.get(reverse('admin:circulacion_prestamo_changelist'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_bibliotecario_no_accede_al_listado_de_alumnos(self):
+        self.client.login(username='biblio1', password='clave-segura-123')
+        response = self.client.get(reverse('admin:alumnos_alumno_changelist'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_bibliotecario_accede_a_su_panel(self):
+        self.client.login(username='biblio1', password='clave-segura-123')
+        response = self.client.get(reverse('admin:catalogo_panel_biblioteca'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_administrativo_no_accede_al_panel_biblioteca(self):
+        self.client.login(username='admvo1', password='clave-segura-123')
+        response = self.client.get(reverse('admin:catalogo_panel_biblioteca'))
+        self.assertEqual(response.status_code, 403)
+
+
+# ──────────────────────────────────────────────────────────────
+# ATERRIZAJE EN /admin/ SEGÚN ROL
+# ──────────────────────────────────────────────────────────────
+
+class PanelRedirectPorRolTests(TestCase):
+    def test_bibliotecario_es_redirigido_a_su_panel(self):
+        biblio = User.objects.create_user(username='biblio_redir', password='clave-segura-123', is_staff=True)
+        biblio.groups.add(Group.objects.get(name='Bibliotecario'))
+        self.client.login(username='biblio_redir', password='clave-segura-123')
+        response = self.client.get('/admin/')
+        self.assertRedirects(response, reverse('admin:catalogo_panel_biblioteca'))
 
 
 # ──────────────────────────────────────────────────────────────
@@ -198,3 +249,54 @@ class AlumnosTests(TestCase):
         existente.refresh_from_db()
         self.assertEqual(existente.numero_cuenta, '0000001')
         self.assertEqual(Alumno.objects.count(), 2)
+
+
+# ──────────────────────────────────────────────────────────────
+# ESTADO DE BIBLIOTECA EN EL CHANGELIST (no_adeudo)
+# ──────────────────────────────────────────────────────────────
+
+class EstadoBibliotecaAdminTests(TestCase):
+    def setUp(self):
+        self.admvo = User.objects.create_user(
+            username='admvo_biblio', password='clave-segura-123', is_staff=True
+        )
+        self.admvo.groups.add(Group.objects.get(name='Administrativos'))
+        self.client.login(username='admvo_biblio', password='clave-segura-123')
+
+    def test_alumno_sin_prestamos_muestra_sin_adeudo(self):
+        _crear_alumno(numero_cuenta='7778889')
+        response = self.client.get(reverse('admin:alumnos_alumno_changelist'))
+        self.assertContains(response, 'Sin adeudo')
+
+    def test_alumno_con_prestamo_vencido_muestra_vencido(self):
+        alumno = _crear_alumno(numero_cuenta='7778890')
+        registro = RegistroBibliografico.objects.create(titulo='Libro de prueba admin')
+        ejemplar = Ejemplar.objects.create(registro=registro, codigo_barras='EJ-ADMIN-0001')
+        ayer = timezone.now().date() - datetime.timedelta(days=1)
+        Prestamo.objects.create(ejemplar=ejemplar, alumno=alumno, fecha_vencimiento=ayer)
+
+        response = self.client.get(reverse('admin:alumnos_alumno_changelist'))
+        self.assertContains(response, 'vencido')
+
+    def test_changelist_muestra_conteo_de_alumnos_con_adeudo(self):
+        alumno = _crear_alumno(numero_cuenta='7778891')
+        registro = RegistroBibliografico.objects.create(titulo='Libro de prueba conteo')
+        ejemplar = Ejemplar.objects.create(registro=registro, codigo_barras='EJ-ADMIN-0002')
+        ayer = timezone.now().date() - datetime.timedelta(days=1)
+        Prestamo.objects.create(ejemplar=ejemplar, alumno=alumno, fecha_vencimiento=ayer)
+
+        response = self.client.get(reverse('admin:alumnos_alumno_changelist'))
+        self.assertEqual(response.context['total_adeudos'], 1)
+
+    def test_exportar_csv_alumnos_genera_csv_con_datos_correctos(self):
+        alumno = _crear_alumno(numero_cuenta='7778892', nombre='ALUMNO CSV')
+        response = self.client.post(reverse('admin:alumnos_alumno_changelist'), {
+            'action': 'exportar_alumnos_csv',
+            '_selected_action': [str(alumno.pk)],
+        })
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        self.assertIn('alumnos.csv', response['Content-Disposition'])
+        filas = list(csv.reader(io.StringIO(response.content.decode('utf-8'))))
+        self.assertEqual(filas[0][0], 'Número de cuenta')
+        self.assertEqual(filas[1][0], '7778892')
+        self.assertEqual(filas[1][1], 'ALUMNO CSV')

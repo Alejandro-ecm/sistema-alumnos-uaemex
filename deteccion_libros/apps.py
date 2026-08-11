@@ -5,3 +5,6 @@ class DeteccionLibrosConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'deteccion_libros'
     verbose_name = 'Detección Libros'
+
+    def ready(self):
+        from . import signals  # noqa: F401

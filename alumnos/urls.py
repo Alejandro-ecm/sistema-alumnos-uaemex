@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import seleccion, registro, gracias, generar_pdf, generar_pdf2, generar_carta, lista_alumnos
+from .views import seleccion, registro, gracias, generar_pdf, generar_pdf2, generar_carta
 
 urlpatterns = [
     path('', seleccion, name='seleccion'),

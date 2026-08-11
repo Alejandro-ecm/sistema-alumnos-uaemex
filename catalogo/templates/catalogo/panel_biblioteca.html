@@ -1,0 +1,128 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content_title %}<h1>Panel Biblioteca</h1>{% endblock %}
+
+{% block content %}
+    <div class="col-12">
+        <div class="row">
+            <div class="col-md-3 col-sm-6">
+                <div class="card mb-3 panel-stat-card">
+                    <div class="card-body panel-stat-body">
+                        <div class="panel-stat-icon"><i class="fas fa-book"></i></div>
+                        <div>
+                            <div class="panel-stat-num">{{ total_ejemplares }}</div>
+                            <div class="panel-stat-label">Ejemplares totales</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="card mb-3 panel-stat-card">
+                    <div class="card-body panel-stat-body">
+                        <div class="panel-stat-icon"><i class="fas fa-check-circle"></i></div>
+                        <div>
+                            <div class="panel-stat-num">{{ ejemplares_disponibles }}</div>
+                            <div class="panel-stat-label">Ejemplares disponibles</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="card mb-3 panel-stat-card">
+                    <div class="card-body panel-stat-body">
+                        <div class="panel-stat-icon"><i class="fas fa-clipboard-list"></i></div>
+                        <div>
+                            <div class="panel-stat-num">{{ prestamos_activos }}</div>
+                            <div class="panel-stat-label">Préstamos activos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="card mb-3 panel-stat-card">
+                    <div class="card-body panel-stat-body">
+                        <div class="panel-stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div>
+                            <div class="panel-stat-num">{{ prestamos_vencidos }}</div>
+                            <div class="panel-stat-label">Préstamos vencidos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="row">
+            <div class="col-md-4 col-sm-12">
+                <a href="{% url 'admin:catalogo_registrobibliografico_changelist' %}" class="pm-card-link">
+                    <div class="card mb-3 pm-card">
+                        <div class="card-body pm-card-body">
+                            <div class="pm-card-icon"><i class="fas fa-book-open"></i></div>
+                            <div>
+                                <div class="pm-card-title">Catálogo</div>
+                                <div class="pm-card-desc">Alta, edición y búsqueda de registros bibliográficos.</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-4 col-sm-12">
+                <a href="{% url 'admin:catalogo_ejemplar_changelist' %}" class="pm-card-link">
+                    <div class="card mb-3 pm-card">
+                        <div class="card-body pm-card-body">
+                            <div class="pm-card-icon"><i class="fas fa-barcode"></i></div>
+                            <div>
+                                <div class="pm-card-title">Ejemplares</div>
+                                <div class="pm-card-desc">Estado y ubicación de cada copia física.</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-4 col-sm-12">
+                <a href="{% url 'admin:circulacion_prestamo_changelist' %}" class="pm-card-link">
+                    <div class="card mb-3 pm-card">
+                        <div class="card-body pm-card-body">
+                            <div class="pm-card-icon"><i class="fas fa-exchange-alt"></i></div>
+                            <div>
+                                <div class="pm-card-title">Préstamos</div>
+                                <div class="pm-card-desc">Registrar, devolver y marcar como perdidos.</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .panel-stat-card { border-left: 6px solid #1f9d5a !important; }
+        .panel-stat-body { display: flex; align-items: center; gap: 18px; }
+        .panel-stat-icon {
+            display: flex; align-items: center; justify-content: center;
+            width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+            background: #1f9d5a; color: #fff; font-size: 22px;
+            box-shadow: 0 4px 12px rgba(31, 157, 90, .35);
+        }
+        .panel-stat-num { font-size: 28px; font-weight: 800; color: #1b5e20; line-height: 1.1; }
+        .panel-stat-label { color: #4a4a4a; font-size: 13px; font-weight: 600; }
+
+        .pm-card-link { text-decoration: none; }
+        .pm-card {
+            border-left: 6px solid #1f9d5a !important;
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+        .pm-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.15); }
+        .pm-card-body { display: flex; align-items: center; gap: 18px; }
+        .pm-card-icon {
+            display: flex; align-items: center; justify-content: center;
+            width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+            background: #1f9d5a; color: #fff; font-size: 22px;
+            box-shadow: 0 4px 12px rgba(31, 157, 90, .35);
+        }
+        .pm-card-title { font-size: 18px; font-weight: 800; color: #1b5e20; line-height: 1.2; }
+        .pm-card-desc { color: #4a4a4a; font-size: 13px; margin-top: 2px; }
+    </style>
+{% endblock %}

@@ -1,8 +1,8 @@
 from django.apps import AppConfig
 
 
-class AlumnosConfig(AppConfig):
-    name = 'alumnos'
+class CatalogoConfig(AppConfig):
+    name = 'catalogo'
 
     def ready(self):
         from . import signals  # noqa: F401

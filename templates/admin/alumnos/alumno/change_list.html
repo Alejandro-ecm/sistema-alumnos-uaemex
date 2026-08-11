@@ -6,7 +6,7 @@
 {% block content %}
     <div class="col-12">
         <div class="row">
-            <div class="col-md-6 col-sm-12">
+            <div class="col-md-4 col-sm-12">
                 <div class="card mb-3 panel-stat-card">
                     <div class="card-body panel-stat-body">
                         <div class="panel-stat-icon"><i class="fas fa-user-graduate"></i></div>
@@ -17,13 +17,24 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-sm-12">
+            <div class="col-md-4 col-sm-12">
                 <div class="card mb-3 panel-stat-card">
                     <div class="card-body panel-stat-body">
                         <div class="panel-stat-icon"><i class="fas fa-print"></i></div>
                         <div>
                             <div class="panel-stat-num">{{ total_impresiones }}</div>
                             <div class="panel-stat-label">Constancias impresas en total</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 col-sm-12">
+                <div class="card mb-3 panel-stat-card">
+                    <div class="card-body panel-stat-body">
+                        <div class="panel-stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div>
+                            <div class="panel-stat-num">{{ total_adeudos }}</div>
+                            <div class="panel-stat-label">Alumnos con adeudo vencido</div>
                         </div>
                     </div>
                 </div>

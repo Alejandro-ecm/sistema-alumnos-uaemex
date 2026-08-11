@@ -486,11 +486,6 @@ def generar_carta(request, alumno_id):
     return response
 
 
-def lista_alumnos(request):
-    alumnos = Alumno.objects.all()
-    return render(request, 'alumnos/lista.html', {'alumnos': alumnos})
-
-
 # ──────────────────────────────────────────────────────────────
 # ATERRIZAJE EN /admin/ SEGÚN ROL
 # ──────────────────────────────────────────────────────────────
@@ -508,4 +503,6 @@ def panel_redirect(request):
         return redirect('admin:alumnos_alumno_changelist')
     if user.groups.filter(name='Mantenimiento').exists():
         return redirect('admin:deteccion_libros_panel_mantenimiento')
+    if user.groups.filter(name='Bibliotecario').exists():
+        return redirect('admin:catalogo_panel_biblioteca')
     return admin.site.index(request)
