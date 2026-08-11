@@ -291,6 +291,11 @@ class EstadoBibliotecaAdminTests(TestCase):
         response = self.client.get(reverse('admin:alumnos_alumno_changelist'))
         self.assertNotContains(response, 'action-select')
 
+    def test_changelist_no_muestra_los_filtros_laterales(self):
+        _crear_alumno(numero_cuenta='7778893', nombre='ALUMNO SIN FILTROS')
+        response = self.client.get(reverse('admin:alumnos_alumno_changelist'))
+        self.assertEqual(response.context['cl'].filter_specs, [])
+
 
 # ──────────────────────────────────────────────────────────────
 # ADMIN DE USUARIOS SIMPLIFICADO (alta/edición por rol)

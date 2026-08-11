@@ -76,7 +76,6 @@ class UsuarioAdmin(DjangoUserAdmin):
 class AlumnoAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'numero_cuenta', 'facultad', 'carrera', 'semestre', 'estado', 'estado_biblioteca', 'documentos_links', 'ver_pdfs', 'eliminar_btn')
     search_fields = ('nombre', 'numero_cuenta', 'correo')
-    list_filter = ('facultad', 'estado', 'carrera', 'semestre', 'modalidad')
     list_editable = ('estado',)
     change_list_template = 'admin/alumnos/alumno/change_list.html'
     actions = None
