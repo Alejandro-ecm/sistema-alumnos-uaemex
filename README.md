@@ -37,6 +37,16 @@ para que cualquier base de datos nueva quede lista tras `migrate`:
 El aterrizaje tras iniciar sesión en `/admin/` depende del grupo del
 usuario (ver `alumnos/views.py`, sección "ATERRIZAJE EN /admin/ SEGÚN ROL").
 
+**Alta y gestión de cuentas** (`/admin/auth/user/`, `alumnos/admin.py`):
+el admin de `User` está simplificado a lo esencial — usuario, contraseña
+(con confirmación), un único rol a elegir entre los 3 grupos, y si la
+cuenta queda activa. No expone `is_staff`/`is_superuser` ni el selector
+de permisos individuales de Django; cualquier cuenta creada aquí entra a
+`/admin/` con exactamente el rol elegido (`UsuarioAdmin.save_model`
+sincroniza el grupo tras guardar). Para dar de baja a alguien que ya no
+trabaja ahí: desmarcar "Activo" (conserva el historial/auditoría) o usar
+"Eliminar" desde el changelist para borrar la cuenta por completo.
+
 ## Cómo correr el proyecto (Windows, desarrollo local)
 
 Todos los comandos de `manage.py` requieren `DEBUG=True` explícito — sin

@@ -1,6 +1,4 @@
-import csv
 import datetime
-import io
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -288,15 +286,76 @@ class EstadoBibliotecaAdminTests(TestCase):
         response = self.client.get(reverse('admin:alumnos_alumno_changelist'))
         self.assertEqual(response.context['total_adeudos'], 1)
 
-    def test_exportar_csv_alumnos_genera_csv_con_datos_correctos(self):
-        alumno = _crear_alumno(numero_cuenta='7778892', nombre='ALUMNO CSV')
-        response = self.client.post(reverse('admin:alumnos_alumno_changelist'), {
-            'action': 'exportar_alumnos_csv',
-            '_selected_action': [str(alumno.pk)],
+    def test_changelist_no_muestra_barra_de_acciones_en_lote(self):
+        _crear_alumno(numero_cuenta='7778892', nombre='ALUMNO SIN ACCIONES')
+        response = self.client.get(reverse('admin:alumnos_alumno_changelist'))
+        self.assertNotContains(response, 'action-select')
+
+
+# ──────────────────────────────────────────────────────────────
+# ADMIN DE USUARIOS SIMPLIFICADO (alta/edición por rol)
+# ──────────────────────────────────────────────────────────────
+
+class UsuarioAdminTests(TestCase):
+    def setUp(self):
+        self.mantenimiento = User.objects.create_user(
+            username='mant_admin', password='clave-segura-123', is_staff=True
+        )
+        self.mantenimiento.groups.add(Group.objects.get(name='Mantenimiento'))
+        self.client.login(username='mant_admin', password='clave-segura-123')
+
+    def test_formulario_de_alta_solo_muestra_los_campos_simplificados(self):
+        response = self.client.get(reverse('admin:auth_user_add'))
+        self.assertContains(response, 'id_rol')
+        self.assertNotContains(response, 'id_is_superuser')
+        self.assertNotContains(response, 'id_user_permissions')
+
+    def test_alta_de_usuario_asigna_is_staff_y_el_grupo_del_rol_elegido(self):
+        response = self.client.post(reverse('admin:auth_user_add'), {
+            'username': 'nuevo_bibliotecario',
+            'password1': 'ClaveSegura123!',
+            'password2': 'ClaveSegura123!',
+            'rol': 'Bibliotecario',
+            'is_active': 'on',
+            '_save': 'Guardar',
         })
-        self.assertEqual(response['Content-Type'], 'text/csv')
-        self.assertIn('alumnos.csv', response['Content-Disposition'])
-        filas = list(csv.reader(io.StringIO(response.content.decode('utf-8'))))
-        self.assertEqual(filas[0][0], 'Número de cuenta')
-        self.assertEqual(filas[1][0], '7778892')
-        self.assertEqual(filas[1][1], 'ALUMNO CSV')
+        self.assertEqual(response.status_code, 302)
+        nuevo = User.objects.get(username='nuevo_bibliotecario')
+        self.assertTrue(nuevo.is_staff)
+        self.assertEqual(list(nuevo.groups.values_list('name', flat=True)), ['Bibliotecario'])
+
+    def test_editar_usuario_resincroniza_el_grupo_al_cambiar_de_rol(self):
+        usuario = User.objects.create_user(username='cambia_rol', password='x', is_staff=True)
+        usuario.groups.add(Group.objects.get(name='Bibliotecario'))
+
+        response = self.client.post(reverse('admin:auth_user_change', args=[usuario.pk]), {
+            'username': 'cambia_rol',
+            'password': usuario.password,
+            'rol': 'Administrativos',
+            'is_active': 'on',
+            '_save': 'Guardar',
+        })
+        self.assertEqual(response.status_code, 302)
+        usuario.refresh_from_db()
+        self.assertEqual(list(usuario.groups.values_list('name', flat=True)), ['Administrativos'])
+
+    def test_desactivar_usuario_no_lo_borra(self):
+        usuario = User.objects.create_user(username='se_desactiva', password='x', is_staff=True)
+        usuario.groups.add(Group.objects.get(name='Bibliotecario'))
+
+        response = self.client.post(reverse('admin:auth_user_change', args=[usuario.pk]), {
+            'username': 'se_desactiva',
+            'password': usuario.password,
+            'rol': 'Bibliotecario',
+            '_save': 'Guardar',
+        })
+        self.assertEqual(response.status_code, 302)
+        usuario.refresh_from_db()
+        self.assertFalse(usuario.is_active)
+        self.assertTrue(User.objects.filter(pk=usuario.pk).exists())
+
+    def test_eliminar_usuario_lo_borra_de_la_base_de_datos(self):
+        usuario = User.objects.create_user(username='se_elimina', password='x', is_staff=True)
+        response = self.client.post(reverse('admin:auth_user_delete', args=[usuario.pk]), {'post': 'yes'})
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(User.objects.filter(pk=usuario.pk).exists())

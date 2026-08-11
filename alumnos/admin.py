@@ -1,22 +1,76 @@
+from django import forms
 from django.contrib import admin
-from django.contrib.auth.models import Group
+from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
+from django.contrib.auth.forms import UserChangeForm, UserCreationForm
+from django.contrib.auth.models import Group, User
 from django.urls import reverse
 from .models import Alumno, ImpresionConstancia
 from django.utils.html import format_html, format_html_join, mark_safe
 
-from proyecto.admin_utils import accion_exportar_csv
-
 admin.site.unregister(Group)
+admin.site.unregister(User)
+
+ROLES = ['Administrativos', 'Mantenimiento', 'Bibliotecario']
 
 
-exportar_alumnos_csv = accion_exportar_csv(
-    'alumnos',
-    ['Número de cuenta', 'Nombre', 'Facultad', 'Carrera', 'Semestre', 'Modalidad', 'Estado', 'Correo', 'Teléfono'],
-    lambda a: [
-        a.numero_cuenta, a.nombre, a.get_facultad_display(), a.get_carrera_display(),
-        a.semestre or '', a.modalidad or '', a.get_estado_display(), a.correo or '', a.telefono or '',
-    ],
-)
+class UsuarioCreationForm(UserCreationForm):
+    """Alta simplificada: usuario, contraseña (x2), rol y si queda activo.
+    Oculta is_staff/is_superuser — cualquier cuenta creada aquí entra a
+    /admin/ con el rol elegido, nada más (los superusuarios se manejan
+    fuera de esta pantalla, p. ej. con `manage.py createsuperuser`)."""
+
+    rol = forms.ChoiceField(choices=[(r, r) for r in ROLES], label='Rol')
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ('username', 'is_active')
+
+
+class UsuarioChangeForm(UserChangeForm):
+    rol = forms.ChoiceField(choices=[(r, r) for r in ROLES], label='Rol', required=False)
+
+    class Meta(UserChangeForm.Meta):
+        model = User
+        fields = ('username', 'is_active')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            grupo_actual = self.instance.groups.filter(name__in=ROLES).first()
+            self.fields['rol'].initial = grupo_actual.name if grupo_actual else None
+
+
+@admin.register(User)
+class UsuarioAdmin(DjangoUserAdmin):
+    add_form = UsuarioCreationForm
+    form = UsuarioChangeForm
+    list_display = ('username', 'rol_actual', 'is_active', 'last_login')
+    list_filter = ('is_active', 'groups')
+    search_fields = ('username',)
+    ordering = ('username',)
+    filter_horizontal = ()
+
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'password1', 'password2', 'rol', 'is_active'),
+        }),
+    )
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Rol y acceso', {'fields': ('rol', 'is_active')}),
+    )
+
+    @admin.display(description='Rol')
+    def rol_actual(self, obj):
+        grupo = obj.groups.filter(name__in=ROLES).first()
+        return grupo.name if grupo else '—'
+
+    def save_model(self, request, obj, form, change):
+        obj.is_staff = True
+        super().save_model(request, obj, form, change)
+        rol = form.cleaned_data.get('rol')
+        obj.groups.set([Group.objects.get(name=rol)] if rol else [])
 
 
 class AlumnoAdmin(admin.ModelAdmin):
@@ -25,7 +79,7 @@ class AlumnoAdmin(admin.ModelAdmin):
     list_filter = ('facultad', 'estado', 'carrera', 'semestre', 'modalidad')
     list_editable = ('estado',)
     change_list_template = 'admin/alumnos/alumno/change_list.html'
-    actions = [exportar_alumnos_csv]
+    actions = None
 
     fieldsets = (
         ("Datos personales", {
