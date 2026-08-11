@@ -10,8 +10,8 @@ from django.utils import timezone
 from alumnos.models import Alumno
 from catalogo.models import Ejemplar, RegistroBibliografico
 
-from .models import PLAZO_PRESTAMO_DIAS, Prestamo
-from .services import alumnos_con_adeudo_count, no_adeudo, resumen_prestamos
+from .models import PLAZO_PRESTAMO_DIAS, TARIFA_MULTA_DIA, Prestamo
+from .services import alumnos_con_adeudo_count, no_adeudo, resumen_multas, resumen_prestamos
 
 
 class PrestamoTests(TestCase):
@@ -91,6 +91,32 @@ class PrestamoTests(TestCase):
         with self.assertRaises(ValidationError):
             prestamo.marcar_perdido()
 
+    def test_marcar_devuelto_sin_atraso_no_genera_multa(self):
+        prestamo = Prestamo.objects.create(ejemplar=self.ejemplar, alumno=self.alumno)
+        prestamo.marcar_devuelto()
+        self.assertEqual(prestamo.dias_retraso, 0)
+        self.assertEqual(prestamo.multa_total, 0)
+
+    def test_marcar_devuelto_con_atraso_calcula_dias_retraso_y_multa_total(self):
+        hace_tres_dias = timezone.now().date() - datetime.timedelta(days=3)
+        prestamo = Prestamo.objects.create(
+            ejemplar=self.ejemplar, alumno=self.alumno, fecha_vencimiento=hace_tres_dias
+        )
+        prestamo.marcar_devuelto()
+        self.assertEqual(prestamo.dias_retraso, 3)
+        self.assertEqual(prestamo.multa_total, 3 * TARIFA_MULTA_DIA)
+
+    def test_marcar_devuelto_persiste_descuento_cobro_y_pago(self):
+        hace_dos_dias = timezone.now().date() - datetime.timedelta(days=2)
+        prestamo = Prestamo.objects.create(
+            ejemplar=self.ejemplar, alumno=self.alumno, fecha_vencimiento=hace_dos_dias
+        )
+        prestamo.marcar_devuelto(multa_descuento=10, multa_cobrada=30, multa_pagada=True)
+        self.assertEqual(prestamo.multa_descuento, 10)
+        self.assertEqual(prestamo.multa_cobrada, 30)
+        self.assertTrue(prestamo.multa_pagada)
+        self.assertIsNotNone(prestamo.multa_pagada_at)
+
 
 def _vencimiento():
     return timezone.now().date() + datetime.timedelta(days=PLAZO_PRESTAMO_DIAS)
@@ -109,10 +135,10 @@ class PrestamoAdminAccionesTests(TestCase):
         )
         self.prestamo = Prestamo.objects.create(ejemplar=self.ejemplar, alumno=self.alumno)
 
-    def test_accion_marcar_devuelto_desde_el_admin_libera_el_ejemplar(self):
-        self.client.post('/admin/circulacion/prestamo/', {
-            'action': 'marcar_devuelto',
-            '_selected_action': [str(self.prestamo.pk)],
+    def test_vista_registrar_devolucion_libera_el_ejemplar(self):
+        self.client.post(f'/admin/circulacion/prestamo/{self.prestamo.pk}/devolver/', {
+            'multa_descuento': '0',
+            'multa_cobrada': '0',
         })
         self.prestamo.refresh_from_db()
         self.ejemplar.refresh_from_db()
@@ -128,6 +154,52 @@ class PrestamoAdminAccionesTests(TestCase):
         self.ejemplar.refresh_from_db()
         self.assertEqual(self.prestamo.estado, 'PERDIDO')
         self.assertEqual(self.ejemplar.estado, 'PERDIDO')
+
+
+class RegistrarDevolucionViewTests(TestCase):
+    def setUp(self):
+        self.staff = User.objects.create_superuser('bibliotecario_devol_test', 'biblio5@example.com', 'x')
+        self.client = Client()
+        self.client.force_login(self.staff)
+
+        registro = RegistroBibliografico.objects.create(titulo='Ficciones')
+        self.ejemplar = Ejemplar.objects.create(registro=registro, codigo_barras='EJ-0011')
+        self.alumno = Alumno.objects.create(
+            nombre='ALUMNO DEVOL TEST', numero_cuenta='9998893', carrera='MEDICO', facultad='MEDICINA'
+        )
+        hace_cuatro_dias = timezone.now().date() - datetime.timedelta(days=4)
+        self.prestamo = Prestamo.objects.create(
+            ejemplar=self.ejemplar, alumno=self.alumno, fecha_vencimiento=hace_cuatro_dias
+        )
+        self.url = f'/admin/circulacion/prestamo/{self.prestamo.pk}/devolver/'
+
+    def test_get_muestra_la_multa_estimada(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, str(4 * TARIFA_MULTA_DIA))
+
+    def test_post_invalido_no_cambia_el_prestamo(self):
+        response = self.client.post(self.url, {'multa_descuento': 'no-es-un-numero', 'multa_cobrada': '0'})
+        self.assertEqual(response.status_code, 200)
+        self.prestamo.refresh_from_db()
+        self.assertEqual(self.prestamo.estado, 'ACTIVO')
+
+    def test_post_valido_marca_devuelto_y_redirige(self):
+        response = self.client.post(self.url, {
+            'multa_descuento': '0', 'multa_cobrada': str(4 * TARIFA_MULTA_DIA), 'multa_pagada': 'on',
+        })
+        self.assertRedirects(response, '/admin/circulacion/prestamo/')
+        self.prestamo.refresh_from_db()
+        self.assertEqual(self.prestamo.estado, 'DEVUELTO')
+        self.assertEqual(self.prestamo.multa_cobrada, 4 * TARIFA_MULTA_DIA)
+        self.assertTrue(self.prestamo.multa_pagada)
+
+    def test_sin_permiso_change_prestamo_recibe_403(self):
+        sin_permiso = User.objects.create_user('sin_permiso_test', 'sinpermiso@example.com', 'x', is_staff=True)
+        client = Client()
+        client.force_login(sin_permiso)
+        response = client.get(self.url)
+        self.assertEqual(response.status_code, 403)
 
 
 class NoAdeudoTests(TestCase):
@@ -185,6 +257,41 @@ class ResumenPrestamosTests(TestCase):
         resultado = resumen_prestamos()
         self.assertEqual(resultado.activos, 2)
         self.assertEqual(resultado.vencidos, 1)
+
+
+class ResumenMultasTests(TestCase):
+    def setUp(self):
+        registro = RegistroBibliografico.objects.create(titulo='Ficciones')
+        self.alumno = Alumno.objects.create(
+            nombre='ALUMNO MULTAS TEST', numero_cuenta='9998894', carrera='MEDICO', facultad='MEDICINA'
+        )
+        self.ej_pagada = Ejemplar.objects.create(registro=registro, codigo_barras='EJ-0012')
+        self.ej_pendiente = Ejemplar.objects.create(registro=registro, codigo_barras='EJ-0013')
+        self.ej_sin_atraso = Ejemplar.objects.create(registro=registro, codigo_barras='EJ-0014')
+
+    def test_resumen_multas_con_datos_mixtos(self):
+        hace_dos_dias = timezone.now().date() - datetime.timedelta(days=2)
+        hace_un_dia = timezone.now().date() - datetime.timedelta(days=1)
+        manana = timezone.now().date() + datetime.timedelta(days=1)
+
+        pagada = Prestamo.objects.create(
+            ejemplar=self.ej_pagada, alumno=self.alumno, fecha_vencimiento=hace_dos_dias
+        )
+        pagada.marcar_devuelto(multa_descuento=5, multa_cobrada=35, multa_pagada=True)
+
+        pendiente = Prestamo.objects.create(
+            ejemplar=self.ej_pendiente, alumno=self.alumno, fecha_vencimiento=hace_un_dia
+        )
+        pendiente.marcar_devuelto()
+
+        Prestamo.objects.create(ejemplar=self.ej_sin_atraso, alumno=self.alumno, fecha_vencimiento=manana)
+
+        resultado = resumen_multas()
+        self.assertEqual(resultado.con_multa, 2)
+        self.assertEqual(resultado.total_generado, 2 * TARIFA_MULTA_DIA + 1 * TARIFA_MULTA_DIA)
+        self.assertEqual(resultado.total_cobrado, 35)
+        self.assertEqual(resultado.total_descuentos, 5)
+        self.assertEqual(resultado.pendientes, 1)
 
 
 class AlumnosConAdeudoCountTests(TestCase):

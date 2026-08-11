@@ -2,7 +2,7 @@ import csv
 import datetime
 import io
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, Permission, User
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -11,8 +11,12 @@ from pymarc.marcxml import parse_xml_to_array
 from alumnos.models import Alumno
 from circulacion.models import Prestamo
 
+from .constancia_donacion import generar_constancia_donacion_docx
 from .marc import _campo_008, generar_marc_xml
-from .models import Autor, AutorRegistro, Editorial, Ejemplar, Materia, RegistroBibliografico
+from .models import (
+    Autor, AutorRegistro, ConstanciaDonacion, ConstanciaDonacionLibro,
+    Editorial, Ejemplar, Materia, RegistroBibliografico,
+)
 
 
 class RegistroBibliograficoTests(TestCase):
@@ -202,3 +206,110 @@ class EjemplarCsvExportTests(TestCase):
         self.assertEqual(filas[0][0], 'Código de barras')
         self.assertEqual(filas[1][0], 'EJ-0013')
         self.assertEqual(filas[1][2], 'A-1')
+
+
+def _texto_completo(doc):
+    partes = [p.text for p in doc.paragraphs]
+    for tabla in doc.tables:
+        for fila in tabla.rows:
+            for celda in fila.cells:
+                partes.append(celda.text)
+    return '\n'.join(partes)
+
+
+class ConstanciaDonacionTests(TestCase):
+    def setUp(self):
+        self.autor = Autor.objects.create(nombre='Julio Cortázar')
+        self.editorial = Editorial.objects.create(nombre='Sudamericana')
+        self.registro = RegistroBibliografico.objects.create(
+            titulo='Rayuela', editorial=self.editorial, edicion='1a ed.'
+        )
+        AutorRegistro.objects.create(registro=self.registro, autor=self.autor, rol='PRINCIPAL')
+
+    def test_folio_tiene_padding_a_seis_digitos(self):
+        constancia = ConstanciaDonacion.objects.create(persona_nombre='Juan Pérez')
+        self.assertEqual(constancia.folio, f'CONST-{constancia.pk:06d}')
+
+    def test_total_volumenes_suma_las_cantidades_de_cada_libro(self):
+        constancia = ConstanciaDonacion.objects.create(persona_nombre='Juan Pérez')
+        otro_registro = RegistroBibliografico.objects.create(titulo='Ficciones')
+        ConstanciaDonacionLibro.objects.create(constancia=constancia, registro=self.registro, cantidad=2)
+        ConstanciaDonacionLibro.objects.create(constancia=constancia, registro=otro_registro, cantidad=3)
+        self.assertEqual(constancia.total_volumenes, 5)
+
+    def test_generar_docx_produce_un_documento_valido_con_folio_donante_y_titulos(self):
+        constancia = ConstanciaDonacion.objects.create(persona_nombre='María López', cargo='Directora')
+        otro_registro = RegistroBibliografico.objects.create(titulo='Ficciones')
+        ConstanciaDonacionLibro.objects.create(constancia=constancia, registro=self.registro, cantidad=1)
+        ConstanciaDonacionLibro.objects.create(constancia=constancia, registro=otro_registro, cantidad=1)
+
+        doc = generar_constancia_donacion_docx(constancia)
+        texto = _texto_completo(doc)
+        self.assertIn(constancia.folio, texto)
+        self.assertIn('MARÍA LÓPEZ', texto)
+        self.assertIn('Rayuela', texto)
+        self.assertIn('Ficciones', texto)
+
+
+class ConstanciaDonacionAdminAccessTests(TestCase):
+    def setUp(self):
+        self.registro = RegistroBibliografico.objects.create(titulo='Rayuela')
+        self.constancia = ConstanciaDonacion.objects.create(persona_nombre='Juan Pérez')
+        ConstanciaDonacionLibro.objects.create(constancia=self.constancia, registro=self.registro)
+
+    def test_sin_permiso_view_constanciadonacion_no_puede_ver_el_changelist(self):
+        usuario = User.objects.create_user('sin_permiso_constancia', 'x@example.com', 'x', is_staff=True)
+        client = Client()
+        client.force_login(usuario)
+        response = client.get('/admin/catalogo/constanciadonacion/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_con_permiso_view_constanciadonacion_puede_descargar_el_word(self):
+        usuario = User.objects.create_user('con_permiso_constancia', 'y@example.com', 'x', is_staff=True)
+        permisos = Permission.objects.filter(
+            content_type__app_label='catalogo',
+            codename__in=['view_constanciadonacion', 'change_constanciadonacion'],
+        )
+        usuario.user_permissions.add(*permisos)
+        client = Client()
+        client.force_login(usuario)
+
+        response = client.post('/admin/catalogo/constanciadonacion/', {
+            'action': 'descargar_word',
+            '_selected_action': [str(self.constancia.pk)],
+        })
+        self.assertEqual(
+            response['Content-Type'],
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        )
+        self.assertIn(f'{self.constancia.folio}.docx', response['Content-Disposition'])
+
+
+class BibliotecarioPuedeCrearConstanciaConLibrosTests(TestCase):
+    """El grupo Bibliotecario necesita permisos sobre ConstanciaDonacionLibro
+    (no solo sobre ConstanciaDonacion) para que el inline del formulario de
+    alta sea visible y guarde los libros seleccionados."""
+
+    def setUp(self):
+        self.usuario = User.objects.create_user('bibliotecario_grupo_test', 'z@example.com', 'x', is_staff=True)
+        self.usuario.groups.add(Group.objects.get(name='Bibliotecario'))
+        self.client = Client()
+        self.client.force_login(self.usuario)
+        self.registro = RegistroBibliografico.objects.create(titulo='El Aleph')
+
+    def test_alta_de_constancia_con_libros_via_el_admin_guarda_los_renglones(self):
+        response = self.client.post('/admin/catalogo/constanciadonacion/add/', {
+            'persona_nombre': 'Donante de Prueba',
+            'cargo': '',
+            'fecha': timezone.now().date().isoformat(),
+            'libros-TOTAL_FORMS': '1',
+            'libros-INITIAL_FORMS': '0',
+            'libros-MIN_NUM_FORMS': '0',
+            'libros-MAX_NUM_FORMS': '1000',
+            'libros-0-registro': str(self.registro.pk),
+            'libros-0-cantidad': '2',
+            '_save': 'Guardar',
+        })
+        self.assertEqual(response.status_code, 302)
+        constancia = ConstanciaDonacion.objects.get(persona_nombre='Donante de Prueba')
+        self.assertEqual(constancia.total_volumenes, 2)

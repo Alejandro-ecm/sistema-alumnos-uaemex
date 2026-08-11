@@ -1,13 +1,18 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied
+from django.http import HttpResponse
 from django.template.response import TemplateResponse
 from django.urls import path
 from django.utils.html import format_html
 
 from proyecto.admin_utils import accion_exportar_csv
 
+from .constancia_donacion import generar_constancia_donacion_docx
 from .marc import generar_marc_xml
-from .models import Autor, AutorRegistro, Editorial, Ejemplar, Materia, RegistroBibliografico
+from .models import (
+    Autor, AutorRegistro, ConstanciaDonacion, ConstanciaDonacionLibro,
+    Editorial, Ejemplar, Materia, RegistroBibliografico,
+)
 
 
 class AutorRegistroInline(admin.TabularInline):
@@ -70,8 +75,9 @@ class RegistroBibliograficoAdmin(admin.ModelAdmin):
         if not request.user.has_perm('catalogo.view_registrobibliografico'):
             raise PermissionDenied
         # import local: catalogo no depende de circulacion a nivel de módulo
-        from circulacion.services import resumen_prestamos
+        from circulacion.services import resumen_multas, resumen_prestamos
         resumen = resumen_prestamos()
+        multas = resumen_multas()
         context = {
             **self.admin_site.each_context(request),
             'title': 'Panel Biblioteca',
@@ -79,6 +85,11 @@ class RegistroBibliograficoAdmin(admin.ModelAdmin):
             'ejemplares_disponibles': Ejemplar.objects.filter(estado='DISPONIBLE').count(),
             'prestamos_activos': resumen.activos,
             'prestamos_vencidos': resumen.vencidos,
+            'libros_recientes': RegistroBibliografico.objects.order_by('-fecha_alta')[:5],
+            'constancias_recientes': ConstanciaDonacion.objects.select_related('generado_por')
+                .prefetch_related('libros__registro')[:5],
+            'constancias_total': ConstanciaDonacion.objects.count(),
+            'multas': multas,
         }
         return TemplateResponse(request, 'catalogo/panel_biblioteca.html', context)
 
@@ -114,3 +125,37 @@ class EjemplarAdmin(admin.ModelAdmin):
     list_filter = ('estado',)
     search_fields = ('codigo_barras', 'registro__titulo')
     actions = [exportar_ejemplares_csv]
+
+
+class ConstanciaDonacionLibroInline(admin.TabularInline):
+    model = ConstanciaDonacionLibro
+    extra = 1
+    autocomplete_fields = ['registro']
+
+
+@admin.register(ConstanciaDonacion)
+class ConstanciaDonacionAdmin(admin.ModelAdmin):
+    list_display = ('folio', 'persona_nombre', 'cargo', 'fecha', 'total_volumenes', 'generado_por')
+    search_fields = ('persona_nombre', 'cargo')
+    readonly_fields = ('generado_por',)
+    inlines = [ConstanciaDonacionLibroInline]
+    actions = ['descargar_word']
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.generado_por = request.user
+        super().save_model(request, obj, form, change)
+
+    @admin.action(description='Descargar constancia (Word)')
+    def descargar_word(self, request, queryset):
+        if queryset.count() != 1:
+            self.message_user(request, 'Selecciona una sola constancia.', level=messages.WARNING)
+            return
+        constancia = queryset.first()
+        doc = generar_constancia_donacion_docx(constancia)
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{constancia.folio}.docx"'
+        doc.save(response)
+        return response

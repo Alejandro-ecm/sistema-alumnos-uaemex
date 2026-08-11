@@ -1,0 +1,32 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content_title %}<h1>Registrar devolución</h1>{% endblock %}
+
+{% block content %}
+    <div class="col-12">
+        <div class="card mb-3 devolucion-info-card">
+            <div class="card-body">
+                <p><strong>Ejemplar:</strong> {{ prestamo.ejemplar }}</p>
+                <p><strong>Alumno:</strong> {{ prestamo.alumno|default:"—" }}</p>
+                <p><strong>Fecha de vencimiento:</strong> {{ prestamo.fecha_vencimiento }}</p>
+                <p><strong>Días de atraso:</strong> {{ dias_retraso }}</p>
+                <p><strong>Multa estimada:</strong> ${{ multa_estimada }} MXN</p>
+            </div>
+        </div>
+
+        <form method="post" class="devolucion-form">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <input type="submit" value="Registrar devolución" class="button default">
+            <a href="{% url 'admin:circulacion_prestamo_changelist' %}" class="button">Cancelar</a>
+        </form>
+    </div>
+
+    <style>
+        .devolucion-info-card { border-left: 6px solid #1f9d5a !important; }
+        .devolucion-info-card p { margin: 4px 0; }
+        .devolucion-form { margin-top: 16px; }
+        .devolucion-form input[type="submit"] { margin-right: 8px; }
+    </style>
+{% endblock %}

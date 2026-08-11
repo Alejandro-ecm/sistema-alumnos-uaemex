@@ -1,4 +1,6 @@
+from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class Autor(models.Model):
@@ -106,3 +108,43 @@ class Ejemplar(models.Model):
 
     def __str__(self):
         return f'{self.codigo_barras} — {self.registro.titulo}'
+
+
+class ConstanciaDonacion(models.Model):
+    persona_nombre = models.CharField(max_length=200)
+    cargo = models.CharField(max_length=200, blank=True)
+    fecha = models.DateField(default=timezone.now)
+    generado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+    )
+    fecha_alta = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha_alta']
+        verbose_name = 'Constancia de donación'
+        verbose_name_plural = 'Constancias de donación'
+
+    @property
+    def folio(self):
+        return f'CONST-{self.pk:06d}'
+
+    @property
+    def total_volumenes(self):
+        return sum(item.cantidad for item in self.libros.all())
+
+    def __str__(self):
+        return f'{self.folio} — {self.persona_nombre}'
+
+
+class ConstanciaDonacionLibro(models.Model):
+    constancia = models.ForeignKey(ConstanciaDonacion, on_delete=models.CASCADE, related_name='libros')
+    registro = models.ForeignKey(RegistroBibliografico, on_delete=models.PROTECT)
+    cantidad = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        unique_together = [('constancia', 'registro')]
+        verbose_name = 'Libro de constancia'
+        verbose_name_plural = 'Libros de constancia'
+
+    def __str__(self):
+        return f'{self.registro.titulo} × {self.cantidad}'

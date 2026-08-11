@@ -10,8 +10,8 @@ posibles robos/daños a libros.
 |--------------------|-------------------------------------------------------------------------|
 | `auditoria`        | Bitácora de auditoría genérica (quién creó/modificó/eliminó qué y cuándo). |
 | `alumnos`          | Alta de alumnos, generación de constancias PDF/DOCX, panel de administración por rol. |
-| `catalogo`         | Registros bibliográficos, autores/editoriales/materias, ejemplares, exportación MARC XML. |
-| `circulacion`      | Préstamos y devoluciones de ejemplares, con integridad transaccional (`select_for_update`). |
+| `catalogo`         | Registros bibliográficos, autores/editoriales/materias, ejemplares, exportación MARC XML, constancias de donación de libros (Word). |
+| `circulacion`      | Préstamos y devoluciones de ejemplares, con integridad transaccional (`select_for_update`) y cobro de multas por atraso. |
 | `deteccion_libros` | Eventos de detección (cámaras + YOLO): posible sustracción o ruptura de libros. |
 
 ## Roles y permisos
@@ -25,9 +25,14 @@ para que cualquier base de datos nueva quede lista tras `migrate`:
   auditoría.
 - **Mantenimiento** (`alumnos/migrations/0013_crear_grupos_roles.py`):
   gestión de eventos de detección y de usuarios del sistema.
-- **Bibliotecario** (`alumnos/migrations/0014_crear_grupo_bibliotecario.py`):
+- **Bibliotecario** (`alumnos/migrations/0014_crear_grupo_bibliotecario.py`,
+  ampliado en `catalogo/migrations/0004_permiso_constancia_bibliotecario.py`
+  y `catalogo/migrations/0005_permiso_constancialibro_bibliotecario.py`):
   gestión de catálogo (registros, ejemplares, autores, editoriales,
-  materias) y de préstamos.
+  materias), de préstamos/devoluciones con cobro de multas, y de
+  constancias de donación de libros. Su panel (`panel_biblioteca`) muestra
+  además los libros agregados recientemente y el resumen de constancias y
+  multas.
 
 El aterrizaje tras iniciar sesión en `/admin/` depende del grupo del
 usuario (ver `alumnos/views.py`, sección "ATERRIZAJE EN /admin/ SEGÚN ROL").
@@ -43,6 +48,24 @@ DEBUG=True venv/Scripts/python.exe manage.py migrate
 DEBUG=True venv/Scripts/python.exe manage.py test
 DEBUG=True venv/Scripts/python.exe manage.py runserver
 ```
+
+## Constancias de donación y multas por atraso
+
+- **Constancias de donación** (`catalogo.ConstanciaDonacion` /
+  `ConstanciaDonacionLibro`): el bibliotecario da de alta la constancia
+  (nombre del donante, cargo, fecha) en `/admin/catalogo/constanciadonacion/`,
+  agrega los títulos donados y su cantidad mediante el inline, y usa la
+  acción "Descargar constancia (Word)" para generar el `.docx` (folio
+  `CONST-000001`, tabla de libros, firma institucional) con
+  `catalogo/constancia_donacion.py`.
+- **Multas por atraso** (`circulacion.Prestamo`): la tarifa
+  (`TARIFA_MULTA_DIA`, actualmente $20 MXN/día) se calcula sobre los días
+  vencidos al momento de la devolución. En vez de la acción masiva
+  "Marcar como devuelto", cada préstamo activo muestra un enlace
+  "Registrar devolución" que lleva a una página dedicada
+  (`/admin/circulacion/prestamo/<id>/devolver/`) donde se ve la multa
+  estimada y se captura el descuento aplicado, el monto cobrado y si ya
+  fue pagada.
 
 ## Bitácora de auditoría
 
