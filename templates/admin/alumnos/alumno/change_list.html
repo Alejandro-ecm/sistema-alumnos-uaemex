@@ -1,0 +1,48 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block content_title %}<h1>Panel Biblioteca UAEMex</h1>{% endblock %}
+
+{% block content %}
+    <div class="col-12">
+        <div class="row">
+            <div class="col-md-6 col-sm-12">
+                <div class="card mb-3 panel-stat-card">
+                    <div class="card-body panel-stat-body">
+                        <div class="panel-stat-icon"><i class="fas fa-user-graduate"></i></div>
+                        <div>
+                            <div class="panel-stat-num">{{ total_alumnos }}</div>
+                            <div class="panel-stat-label">Alumnos en el sistema</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-sm-12">
+                <div class="card mb-3 panel-stat-card">
+                    <div class="card-body panel-stat-body">
+                        <div class="panel-stat-icon"><i class="fas fa-print"></i></div>
+                        <div>
+                            <div class="panel-stat-num">{{ total_impresiones }}</div>
+                            <div class="panel-stat-label">Constancias impresas en total</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{ block.super }}
+
+    <style>
+        .panel-stat-card { border-left: 6px solid #1f9d5a !important; }
+        .panel-stat-body { display: flex; align-items: center; gap: 18px; }
+        .panel-stat-icon {
+            display: flex; align-items: center; justify-content: center;
+            width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+            background: #1f9d5a; color: #fff; font-size: 22px;
+            box-shadow: 0 4px 12px rgba(31, 157, 90, .35);
+        }
+        .panel-stat-num { font-size: 28px; font-weight: 800; color: #1b5e20; line-height: 1.1; }
+        .panel-stat-label { color: #4a4a4a; font-size: 13px; font-weight: 600; }
+    </style>
+{% endblock %}

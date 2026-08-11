@@ -3,19 +3,12 @@ import os
 from io import BytesIO
 from copy import deepcopy
 
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
+from django.core.exceptions import PermissionDenied
 from django.conf import settings
 from .forms import AlumnoForm
-from .models import Alumno
-
-from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
-)
-from reportlab.lib.styles import ParagraphStyle
-from reportlab.lib.units import cm
-from reportlab.lib.pagesizes import letter
-from reportlab.lib import colors
+from .models import Alumno, ImpresionConstancia
 
 from docx import Document
 from docx.shared import Pt, Inches
@@ -25,6 +18,8 @@ MESES = ['enero','febrero','marzo','abril','mayo','junio',
          'julio','agosto','septiembre','octubre','noviembre','diciembre']
 
 TEMPLATES_DOCX = os.path.join(settings.BASE_DIR, 'templates_docx')
+
+SESSION_KEY_ALUMNOS_AUTORIZADOS = 'alumnos_autorizados'
 
 
 # ──────────────────────────────────────────────────────────────
@@ -36,12 +31,31 @@ def _today_str():
     return f"{hoy.day} de {MESES[hoy.month - 1]} de {hoy.year}"
 
 
-def _set_run_text(run, text):
-    run.text = text
-
-
 def _safe(value, default=''):
     return (value or default).strip()
+
+
+def _autorizar_alumno_en_sesion(request, alumno_id):
+    """Marca en la sesión del navegador que puede generar/descargar los
+    documentos de este alumno, sin requerir que inicie sesión: el flujo
+    público de registro → gracias → imprimir sigue funcionando igual."""
+    autorizados = request.session.get(SESSION_KEY_ALUMNOS_AUTORIZADOS, [])
+    if alumno_id not in autorizados:
+        autorizados.append(alumno_id)
+        request.session[SESSION_KEY_ALUMNOS_AUTORIZADOS] = autorizados
+
+
+def _puede_acceder_documentos(request, alumno_id):
+    """Autorización real en backend para /pdf/, /pdf2/ y /carta/: personal
+    con permiso sobre Alumno (Administrativos, superusuario), o el mismo
+    navegador que acaba de registrar a ese alumno (vía sesión). Un ID
+    adivinado/cambiado en la URL, sin ninguna de las dos condiciones, no
+    es suficiente."""
+    user = request.user
+    if user.is_authenticated and (user.is_superuser or user.has_perm('alumnos.view_alumno')):
+        return True
+    autorizados = request.session.get(SESSION_KEY_ALUMNOS_AUTORIZADOS, [])
+    return alumno_id in autorizados
 
 
 # ──────────────────────────────────────────────────────────────
@@ -60,6 +74,7 @@ def registro(request, facultad='MEDICINA'):
             alumno = form.save(commit=False)
             alumno.facultad = facultad
             alumno.save()
+            _autorizar_alumno_en_sesion(request, alumno.id)
             return redirect('gracias', alumno_id=alumno.id)
     else:
         form = AlumnoForm()
@@ -72,7 +87,7 @@ def registro(request, facultad='MEDICINA'):
 
 
 def gracias(request, alumno_id):
-    alumno = Alumno.objects.get(id=alumno_id)
+    alumno = get_object_or_404(Alumno, id=alumno_id)
     return render(request, 'alumnos/gracias.html', {'alumno': alumno})
 
 
@@ -81,7 +96,9 @@ def gracias(request, alumno_id):
 # ──────────────────────────────────────────────────────────────
 
 def generar_pdf(request, alumno_id):
-    alumno = Alumno.objects.get(id=alumno_id)
+    if not _puede_acceder_documentos(request, alumno_id):
+        raise PermissionDenied
+    alumno = get_object_or_404(Alumno, id=alumno_id)
     doc = Document(os.path.join(TEMPLATES_DOCX, 'constanciaedit.docx'))
 
     nombre  = _safe(alumno.nombre).upper()
@@ -110,6 +127,7 @@ def generar_pdf(request, alumno_id):
         content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     )
     response['Content-Disposition'] = f'attachment; filename="constancia_{cuenta}.docx"'
+    ImpresionConstancia.objects.create(alumno=alumno, tipo='NO_ADEUDO')
     return response
 
 
@@ -118,7 +136,9 @@ def generar_pdf(request, alumno_id):
 # ──────────────────────────────────────────────────────────────
 
 def generar_pdf2(request, alumno_id):
-    alumno = Alumno.objects.get(id=alumno_id)
+    if not _puede_acceder_documentos(request, alumno_id):
+        raise PermissionDenied
+    alumno = get_object_or_404(Alumno, id=alumno_id)
     doc = Document(os.path.join(TEMPLATES_DOCX, 'regristromaterial.docx'))
 
     nombre = _safe(alumno.nombre).upper()
@@ -154,6 +174,7 @@ def generar_pdf2(request, alumno_id):
         content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     )
     response['Content-Disposition'] = f'attachment; filename="registro_material_{alumno.numero_cuenta}.docx"'
+    ImpresionConstancia.objects.create(alumno=alumno, tipo='REGISTRO_MATERIAL')
     return response
 
 
@@ -194,7 +215,9 @@ def _add_field(doc, label, value, size=10):
 
 
 def generar_carta(request, alumno_id):
-    alumno = Alumno.objects.get(id=alumno_id)
+    if not _puede_acceder_documentos(request, alumno_id):
+        raise PermissionDenied
+    alumno = get_object_or_404(Alumno, id=alumno_id)
     fecha   = _today_str()
     nombre  = _safe(alumno.nombre)
     cuenta  = _safe(alumno.numero_cuenta)
@@ -459,9 +482,30 @@ def generar_carta(request, alumno_id):
         content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     )
     response['Content-Disposition'] = f'attachment; filename="carta_autorizacion_{cuenta}.docx"'
+    ImpresionConstancia.objects.create(alumno=alumno, tipo='CARTA_AUTORIZACION')
     return response
 
 
 def lista_alumnos(request):
     alumnos = Alumno.objects.all()
     return render(request, 'alumnos/lista.html', {'alumnos': alumnos})
+
+
+# ──────────────────────────────────────────────────────────────
+# ATERRIZAJE EN /admin/ SEGÚN ROL
+# ──────────────────────────────────────────────────────────────
+
+from django.contrib import admin
+from django.contrib.admin.views.decorators import staff_member_required
+
+
+@staff_member_required
+def panel_redirect(request):
+    user = request.user
+    if user.is_superuser:
+        return admin.site.index(request)
+    if user.groups.filter(name='Administrativos').exists():
+        return redirect('admin:alumnos_alumno_changelist')
+    if user.groups.filter(name='Mantenimiento').exists():
+        return redirect('admin:deteccion_libros_panel_mantenimiento')
+    return admin.site.index(request)

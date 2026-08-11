@@ -1,6 +1,8 @@
 from pathlib import Path
 import os
 
+from django.core.exceptions import ImproperlyConfigured
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Carpeta de datos persistentes (base de datos SQLite + archivos subidos).
@@ -8,16 +10,36 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # para que los datos NO se borren en cada despliegue.
 DATA_DIR = Path(os.environ.get('DATA_DIR', BASE_DIR))
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-4e!z4e&r1@ipwwherj*rvfe2vs1g$21t9@_qa=^lj%b-g+9^qd')
+# DEBUG por defecto en False: si la variable de entorno no está definida,
+# el sistema debe arrancar seguro (sin tracebacks/DEBUG expuestos), no al revés.
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG:
+        # Solo para desarrollo local sin variables de entorno configuradas.
+        SECRET_KEY = 'django-insecure-4e!z4e&r1@ipwwherj*rvfe2vs1g$21t9@_qa=^lj%b-g+9^qd'
+    else:
+        raise ImproperlyConfigured(
+            'SECRET_KEY no está definido. Configura la variable de entorno SECRET_KEY '
+            'antes de ejecutar el sistema con DEBUG=False (producción).'
+        )
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    h.strip() for h in os.environ.get(
+        'ALLOWED_HOSTS',
+        'titulacion.skytechnologieslatam.com,.railway.app,.up.railway.app,localhost,127.0.0.1'
+    ).split(',') if h.strip()
+]
 CSRF_TRUSTED_ORIGINS = [
     'https://titulacion.skytechnologieslatam.com',
     'https://*.railway.app',
     'https://*.up.railway.app',
 ]
+
+# Cookies de sesión/CSRF solo por HTTPS cuando no estamos en desarrollo local.
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
 
 INSTALLED_APPS = [
     'jazzmin',

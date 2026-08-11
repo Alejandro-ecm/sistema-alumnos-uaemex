@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from django.contrib import admin
+from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
 from django.template.response import TemplateResponse
 from django.urls import path
@@ -55,10 +56,23 @@ class EventoDeteccionAdmin(admin.ModelAdmin):
             path('vista-seguridad/guardar-camara/',
                  self.admin_site.admin_view(self.guardar_camara),
                  name='deteccion_libros_guardar_camara'),
+            path('panel-mantenimiento/', self.admin_site.admin_view(self.panel_mantenimiento),
+                 name='deteccion_libros_panel_mantenimiento'),
         ]
         return extra + urls
 
+    def panel_mantenimiento(self, request):
+        if not request.user.has_perm('deteccion_libros.view_eventodeteccion'):
+            raise PermissionDenied
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Panel Mantenimiento',
+        }
+        return TemplateResponse(request, 'deteccion_libros/panel_mantenimiento.html', context)
+
     def vista_seguridad(self, request):
+        if not request.user.has_perm('deteccion_libros.view_eventodeteccion'):
+            raise PermissionDenied
         camaras = _leer_camaras()
         context = {
             **self.admin_site.each_context(request),
@@ -74,6 +88,8 @@ class EventoDeteccionAdmin(admin.ModelAdmin):
         panel de Vista de seguridad, para conectar el celular o una cámara de la
         escuela sin editar el archivo a mano. capturar.py detecta el cambio solo
         (mtime-watch en su loop principal) y arranca/detiene el hilo correspondiente."""
+        if not request.user.has_perm('deteccion_libros.view_eventodeteccion'):
+            raise PermissionDenied
         nombre = (request.POST.get('nombre') or '').strip()
         source = (request.POST.get('source') or '').strip()
         activa = request.POST.get('activa') == '1'

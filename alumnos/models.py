@@ -122,3 +122,19 @@ class Alumno(models.Model):
 
     def __str__(self):
         return self.nombre
+
+
+class ImpresionConstancia(models.Model):
+
+    TIPOS = [
+        ('NO_ADEUDO', 'Constancia No Adeudo'),
+        ('REGISTRO_MATERIAL', 'Registro Material'),
+        ('CARTA_AUTORIZACION', 'Carta Autorización'),
+    ]
+
+    alumno = models.ForeignKey(Alumno, on_delete=models.SET_NULL, null=True, blank=True)
+    tipo = models.CharField(max_length=20, choices=TIPOS)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.get_tipo_display()} — {self.fecha:%Y-%m-%d %H:%M}'

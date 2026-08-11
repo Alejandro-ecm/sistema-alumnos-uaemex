@@ -1,0 +1,55 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content_title %}<h1>Panel Mantenimiento</h1>{% endblock %}
+
+{% block content %}
+    <div class="col-12">
+        <div class="row">
+            <div class="col-md-6 col-sm-12">
+                <a href="{% url 'admin:deteccion_libros_vista_seguridad' %}" class="pm-card-link">
+                    <div class="card mb-3 pm-card">
+                        <div class="card-body pm-card-body">
+                            <div class="pm-card-icon"><i class="fas fa-video"></i></div>
+                            <div>
+                                <div class="pm-card-title">Vista de seguridad</div>
+                                <div class="pm-card-desc">Cámaras en vivo, detección de eventos y control de dispositivos.</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-6 col-sm-12">
+                <a href="{% url 'admin:auth_user_changelist' %}" class="pm-card-link">
+                    <div class="card mb-3 pm-card">
+                        <div class="card-body pm-card-body">
+                            <div class="pm-card-icon"><i class="fas fa-users-cog"></i></div>
+                            <div>
+                                <div class="pm-card-title">Usuarios</div>
+                                <div class="pm-card-desc">Dar de alta cuentas del sistema y asignarles su rol (grupo).</div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .pm-card-link { text-decoration: none; }
+        .pm-card {
+            border-left: 6px solid #1f9d5a !important;
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+        .pm-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.15); }
+        .pm-card-body { display: flex; align-items: center; gap: 18px; }
+        .pm-card-icon {
+            display: flex; align-items: center; justify-content: center;
+            width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+            background: #1f9d5a; color: #fff; font-size: 22px;
+            box-shadow: 0 4px 12px rgba(31, 157, 90, .35);
+        }
+        .pm-card-title { font-size: 18px; font-weight: 800; color: #1b5e20; line-height: 1.2; }
+        .pm-card-desc { color: #4a4a4a; font-size: 13px; margin-top: 2px; }
+    </style>
+{% endblock %}
