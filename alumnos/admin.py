@@ -3,7 +3,9 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 from django.contrib.auth.models import Group, User
-from django.urls import reverse
+from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotAllowed
+from django.shortcuts import get_object_or_404
+from django.urls import path, reverse
 from .models import Alumno, ImpresionConstancia
 from django.utils.html import format_html, format_html_join, mark_safe
 
@@ -44,11 +46,11 @@ class UsuarioChangeForm(UserChangeForm):
 class UsuarioAdmin(DjangoUserAdmin):
     add_form = UsuarioCreationForm
     form = UsuarioChangeForm
-    list_display = ('username', 'rol_actual', 'is_active', 'last_login')
-    list_filter = ('is_active', 'groups')
+    list_display = ('username', 'rol_selector', 'is_active', 'last_login', 'eliminar_btn')
     search_fields = ('username',)
     ordering = ('username',)
     filter_horizontal = ()
+    actions = None
 
     add_fieldsets = (
         (None, {
@@ -61,10 +63,57 @@ class UsuarioAdmin(DjangoUserAdmin):
         ('Rol y acceso', {'fields': ('rol', 'is_active')}),
     )
 
+    def get_urls(self):
+        propias = [
+            path(
+                '<int:user_id>/cambiar-rol/',
+                self.admin_site.admin_view(self.cambiar_rol_view),
+                name='auth_user_cambiar_rol',
+            ),
+        ]
+        return propias + super().get_urls()
+
+    def cambiar_rol_view(self, request, user_id):
+        if request.method != 'POST':
+            return HttpResponseNotAllowed(['POST'])
+        if not request.user.has_perm('auth.change_user'):
+            return HttpResponseForbidden()
+        usuario = get_object_or_404(User, pk=user_id)
+        rol = request.POST.get('rol', '')
+        usuario.groups.set([Group.objects.get(name=rol)] if rol in ROLES else [])
+        return HttpResponse('OK')
+
     @admin.display(description='Rol')
-    def rol_actual(self, obj):
-        grupo = obj.groups.filter(name__in=ROLES).first()
-        return grupo.name if grupo else '—'
+    def rol_selector(self, obj):
+        grupo_actual = obj.groups.filter(name__in=ROLES).first()
+        actual = grupo_actual.name if grupo_actual else ''
+        url = reverse('admin:auth_user_cambiar_rol', args=[obj.pk])
+        opciones = ''.join(
+            f'<option value="{r}"{" selected" if r == actual else ""}>{r}</option>' for r in ROLES
+        )
+        js = (
+            "fetch('%s',{method:'POST',headers:{'X-CSRFToken':document.cookie.match(/csrftoken=([^;]+)/)[1]},"
+            "body:new URLSearchParams({rol:this.value})}).then(()=>location.reload());"
+        ) % url
+        html = (
+            f'<select onchange="{js}" style="padding:3px 6px;border-radius:4px;border:1px solid #ccc;">'
+            f'<option value=""{" selected" if not actual else ""}>— sin rol —</option>'
+            f'{opciones}'
+            f'</select>'
+        )
+        return mark_safe(html)
+
+    def eliminar_btn(self, obj):
+        url = reverse('admin:auth_user_delete', args=[obj.pk])
+        html = (
+            f'<a href="{url}" style="'
+            f'display:block;padding:4px 8px;background:#c62828;color:#fff;'
+            f'border-radius:4px;text-decoration:none;font-size:12px;text-align:center;'
+            f'min-width:90px;">'
+            f'🗑 Eliminar</a>'
+        )
+        return mark_safe(html)
+    eliminar_btn.short_description = "Eliminar"
 
     def save_model(self, request, obj, form, change):
         obj.is_staff = True
