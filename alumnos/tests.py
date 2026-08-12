@@ -1,7 +1,9 @@
+import base64
 import datetime
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -13,6 +15,10 @@ from .models import Alumno, ImpresionConstancia
 
 User = get_user_model()
 
+_PNG_1PX = base64.b64decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
+)
+
 
 def _crear_alumno(**overrides):
     datos = dict(
@@ -23,6 +29,17 @@ def _crear_alumno(**overrides):
     )
     datos.update(overrides)
     return Alumno.objects.create(**datos)
+
+
+def _datos_libro_validos():
+    """Campos requeridos del cuestionario de datos del libro (sección 4 de registro.html)."""
+    return {
+        'libro_titulo': 'Anatomía Humana',
+        'libro_autor': 'Latarjet',
+        'libro_editorial': 'Panamericana',
+        'libro_edicion': '5a edición',
+        'libro_portada': SimpleUploadedFile('portada.png', _PNG_1PX, content_type='image/png'),
+    }
 
 
 # ──────────────────────────────────────────────────────────────
@@ -158,6 +175,7 @@ class DocumentosTests(TestCase):
             'numero_cuenta': '1112223',
             'carrera': 'MEDICO',
             'acepta_terminos': 'on',
+            **_datos_libro_validos(),
         }
         response = self.client.post(reverse('registro_medicina'), datos)
         self.assertEqual(response.status_code, 302)
@@ -209,6 +227,7 @@ class AlumnosTests(TestCase):
             'numero_cuenta': '5556667',
             'carrera': 'MEDICO',
             'acepta_terminos': 'on',
+            **_datos_libro_validos(),
         }
         response = self.client.post(reverse('registro_medicina'), datos)
         self.assertEqual(response.status_code, 302)
@@ -242,6 +261,7 @@ class AlumnosTests(TestCase):
             'numero_cuenta': '0000002',
             'carrera': 'MEDICO',
             'acepta_terminos': 'on',
+            **_datos_libro_validos(),
         }
         self.client.post(reverse('registro_quimica'), datos)
         existente.refresh_from_db()

@@ -22,6 +22,16 @@ class AlumnoForm(forms.ModelForm):
             'documento1': forms.ClearableFileInput(attrs={'accept': 'application/pdf'}),
             'documento2': forms.ClearableFileInput(attrs={'accept': 'application/pdf'}),
             'documento3': forms.ClearableFileInput(attrs={'accept': 'application/pdf'}),
+            'libro_titulo': forms.TextInput(attrs={'placeholder': 'Título del libro'}),
+            'libro_autor': forms.TextInput(attrs={'placeholder': 'Autor(es) del libro'}),
+            'libro_editorial': forms.TextInput(attrs={'placeholder': 'Editorial'}),
+            'libro_edicion': forms.TextInput(attrs={'placeholder': 'Ej. 3a edición'}),
+            'libro_portada': forms.ClearableFileInput(attrs={'accept': 'image/*'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for campo in ('libro_titulo', 'libro_autor', 'libro_editorial', 'libro_edicion', 'libro_portada'):
+            self.fields[campo].required = True
 
 

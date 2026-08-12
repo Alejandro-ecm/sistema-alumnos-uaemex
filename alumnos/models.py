@@ -108,6 +108,13 @@ class Alumno(models.Model):
     documento2 = models.FileField(upload_to='documentos/', blank=True, null=True)
     documento3 = models.FileField(upload_to='documentos/', blank=True, null=True)
 
+    # Datos del libro para el Registro de Material (regristromaterial.docx)
+    libro_titulo = models.CharField(max_length=255, blank=True, null=True)
+    libro_autor = models.CharField(max_length=255, blank=True, null=True)
+    libro_editorial = models.CharField(max_length=150, blank=True, null=True)
+    libro_edicion = models.CharField(max_length=100, blank=True, null=True)
+    libro_portada = models.ImageField(upload_to='portadas/', blank=True, null=True)
+
     FACULTADES = [
         ('MEDICINA', 'Facultad de Medicina'),
         ('QUIMICA', 'Facultad de Química'),

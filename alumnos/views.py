@@ -142,7 +142,11 @@ def generar_pdf2(request, alumno_id):
     doc = Document(os.path.join(TEMPLATES_DOCX, 'regristromaterial.docx'))
 
     nombre = _safe(alumno.nombre).upper()
-    tema   = _safe(alumno.tema)
+
+    libro_titulo   = _safe(alumno.libro_titulo)
+    libro_autor    = _safe(alumno.libro_autor)
+    libro_edicion  = _safe(alumno.libro_edicion)
+    libro_editorial = _safe(alumno.libro_editorial)
 
     # Párrafo [0]: nombre del alumno
     para0 = doc.paragraphs[0]
@@ -162,8 +166,15 @@ def generar_pdf2(request, alumno_id):
                 else:
                     cell.paragraphs[0].add_run(text)
 
-            _write_cell(row.cells[0], tema)
-            _write_cell(row.cells[1], nombre)
+            _write_cell(row.cells[0], libro_titulo)
+            _write_cell(row.cells[1], libro_autor)
+            _write_cell(row.cells[2], libro_edicion)
+            _write_cell(row.cells[3], libro_editorial)
+
+    # Portada del libro (si se subió una foto), al final del documento
+    if alumno.libro_portada and os.path.exists(alumno.libro_portada.path):
+        doc.add_paragraph()
+        doc.add_picture(alumno.libro_portada.path, width=Inches(2.2))
 
     buffer = BytesIO()
     doc.save(buffer)

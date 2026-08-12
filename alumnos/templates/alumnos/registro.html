@@ -756,6 +756,11 @@ body {
     <div class="step-connector"></div>
     <div class="step-dot">
         <div class="step-dot-inner" id="s4">4</div>
+        <span class="step-label">Libro</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-dot">
+        <div class="step-dot-inner" id="s5">5</div>
         <span class="step-label">Términos</span>
     </div>
 </div>
@@ -905,10 +910,63 @@ body {
             </div>
         </div>
 
-        <!-- ── SECCIÓN 4: Términos ── -->
+        <!-- ── SECCIÓN 4: Datos del libro (Registro de Material) ── -->
         <div class="form-card" id="sec4">
             <div class="card-header">
                 <div class="card-header-num">4</div>
+                <div class="card-header-title">📚 Datos del libro donado</div>
+            </div>
+            <div class="card-body">
+                <div class="aviso" style="margin-bottom:1.2rem;">
+                    <span class="aviso-icon">ℹ️</span>
+                    <div>
+                        Como parte del trámite, dona un ejemplar a la Biblioteca de Área. Estos datos
+                        llenan automáticamente tu Registro de Material para poder imprimir la constancia.
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <span class="field-num">8. Título del libro</span>
+                        {{ form.libro_titulo }}
+                        {{ form.libro_titulo.errors }}
+                    </div>
+                    <div class="form-group">
+                        <span class="field-num">9. Autor(es)</span>
+                        {{ form.libro_autor }}
+                        {{ form.libro_autor.errors }}
+                    </div>
+                    <div class="form-group">
+                        <span class="field-num">10. Editorial</span>
+                        {{ form.libro_editorial }}
+                        {{ form.libro_editorial.errors }}
+                    </div>
+                    <div class="form-group">
+                        <span class="field-num">11. Edición</span>
+                        {{ form.libro_edicion }}
+                        {{ form.libro_edicion.errors }}
+                    </div>
+                </div>
+                <div class="upload-grid single" style="margin-top:1.2rem;">
+                    <div class="form-group">
+                        <div class="file-zone" id="zonePortada">
+                            {{ form.libro_portada }}
+                            <div class="file-zone-icon">🖼️</div>
+                            <div class="file-zone-num">12. Foto de la portada</div>
+                            <div class="file-zone-label">Portada del libro</div>
+                            <div class="file-zone-hint">JPG o PNG · Máx. 10 MB</div>
+                            <img id="previewPortada" style="display:none;max-width:100%;max-height:140px;border-radius:8px;margin-top:8px;">
+                            <div class="file-zone-name" id="fnamePortada"></div>
+                        </div>
+                        {{ form.libro_portada.errors }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── SECCIÓN 5: Términos ── -->
+        <div class="form-card" id="sec5">
+            <div class="card-header">
+                <div class="card-header-num">5</div>
                 <div class="card-header-title">✅ Términos y condiciones</div>
             </div>
             <div class="card-body">
@@ -1093,6 +1151,7 @@ var sections = [
     {el: document.getElementById('sec2'), dot: document.getElementById('s2')},
     {el: document.getElementById('sec3'), dot: document.getElementById('s3')},
     {el: document.getElementById('sec4'), dot: document.getElementById('s4')},
+    {el: document.getElementById('sec5'), dot: document.getElementById('s5')},
 ];
 function updateProgress() {
     var scrollY = window.scrollY + 180;
@@ -1135,16 +1194,22 @@ document.querySelectorAll('.file-zone').forEach(function(zone) {
     var nameDiv = zone.querySelector('.file-zone-name');
     var hint    = zone.querySelector('.file-zone-hint');
     if (!input) return;
+    var preview = zone.querySelector('img[id^="preview"]');
     input.addEventListener('change', function() {
         if (this.files[0]) {
             nameDiv.textContent = '✓ ' + this.files[0].name;
             nameDiv.style.color = '#1b5e20';
             zone.classList.add('has-file');
             if (hint) hint.style.display = 'none';
+            if (preview) {
+                preview.src = URL.createObjectURL(this.files[0]);
+                preview.style.display = 'block';
+            }
         } else {
             nameDiv.textContent = '';
             zone.classList.remove('has-file');
             if (hint) hint.style.display = '';
+            if (preview) { preview.style.display = 'none'; preview.src = ''; }
         }
     });
     // Drag-over effects
