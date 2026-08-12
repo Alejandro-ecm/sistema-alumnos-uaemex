@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>Inventario de biblioteca</title>
+    <style>
+        body { font-family: Arial, sans-serif; color: #1b1b1b; margin: 24px; }
+        .encabezado { display: flex; align-items: center; gap: 16px; border-bottom: 3px solid #1f9d5a; padding-bottom: 12px; margin-bottom: 16px; }
+        .encabezado img { height: 64px; }
+        .encabezado h1 { font-size: 20px; margin: 0; color: #1b5e20; }
+        .encabezado p { margin: 2px 0 0; font-size: 12px; color: #555; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { padding: 5px 7px; border-bottom: 1px solid #ddd; text-align: left; }
+        th { background: #1f9d5a; color: #fff; }
+        @media print {
+            a { text-decoration: none; color: inherit; }
+        }
+    </style>
+</head>
+<body>
+    <div class="encabezado">
+        <img src="{% static 'img/logo.JPG' %}" alt="Logo">
+        <div>
+            <h1>Biblioteca de Área de Medicina y Química — Inventario</h1>
+            <p>Generado: {{ fecha_impresion|date:"d/m/Y H:i" }}</p>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Título</th><th>Autor(es)</th><th>Editorial</th><th>ISBN</th>
+                <th>Total</th><th>Disponibles</th><th>Prestados</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for registro in registros %}
+                <tr>
+                    <td>{{ registro.titulo }}</td>
+                    <td>{% for a in registro.autores.all %}{{ a.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+                    <td>{{ registro.editorial.nombre|default:'' }}</td>
+                    <td>{{ registro.isbn }}</td>
+                    <td>{{ registro.total_ejemplares }}</td>
+                    <td>{{ registro.disponibles }}</td>
+                    <td>{{ registro.prestados }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="7">No hay registros bibliográficos.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <script>window.onload = () => window.print();</script>
+</body>
+</html>

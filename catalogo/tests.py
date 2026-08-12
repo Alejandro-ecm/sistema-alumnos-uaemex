@@ -2,6 +2,7 @@ import csv
 import datetime
 import io
 
+import openpyxl
 from django.contrib.auth.models import Group, Permission, User
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -12,11 +13,25 @@ from alumnos.models import Alumno
 from circulacion.models import Prestamo
 
 from .constancia_donacion import generar_constancia_donacion_docx
+from .excel_inventario import (
+    TEMPLATE_HEADERS, exportar_inventario_xlsx, generar_plantilla_xlsx, importar_libros_xlsx,
+)
 from .marc import _campo_008, generar_marc_xml
 from .models import (
     Autor, AutorRegistro, ConstanciaDonacion, ConstanciaDonacionLibro,
     Editorial, Ejemplar, Materia, RegistroBibliografico,
 )
+
+
+def _xlsx_bytes(filas):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    for fila in filas:
+        ws.append(fila)
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    return buffer
 
 
 class RegistroBibliograficoTests(TestCase):
@@ -313,3 +328,158 @@ class BibliotecarioPuedeCrearConstanciaConLibrosTests(TestCase):
         self.assertEqual(response.status_code, 302)
         constancia = ConstanciaDonacion.objects.get(persona_nombre='Donante de Prueba')
         self.assertEqual(constancia.total_volumenes, 2)
+
+
+class ImportarLibrosXlsxTests(TestCase):
+    def test_libro_nuevo_crea_registro_autor_editorial_materia_y_ejemplares(self):
+        archivo = _xlsx_bytes([
+            ['#', 'TITULO', 'AUTOR', 'EDITORIAL', 'EDICION', 'CANTIDAD', 'CATEGORIA', 'ISBN'],
+            [1, 'Nuevo Libro', 'Autor Nuevo', 'Editorial X', '1a ed.', 3, 'Categoria X', '123456'],
+        ])
+        resultado = importar_libros_xlsx(archivo)
+        self.assertEqual(resultado['nuevos'], 1)
+        self.assertEqual(resultado['actualizados'], 0)
+        self.assertEqual(resultado['errores'], 0)
+
+        registro = RegistroBibliografico.objects.get(titulo='Nuevo Libro')
+        self.assertEqual(registro.ejemplares.count(), 3)
+        self.assertEqual(registro.editorial.nombre, 'Editorial X')
+        self.assertIn('Autor Nuevo', [a.nombre for a in registro.autores.all()])
+        self.assertIn('Categoria X', [m.nombre for m in registro.materias.all()])
+        self.assertTrue(all(e.codigo_barras.startswith('IMP-') for e in registro.ejemplares.all()))
+
+    def test_libro_existente_agrega_ejemplares_sin_duplicar_registro(self):
+        registro = RegistroBibliografico.objects.create(titulo='Libro Existente')
+        autor = Autor.objects.create(nombre='Autor Existente')
+        AutorRegistro.objects.create(registro=registro, autor=autor, rol='PRINCIPAL')
+        Ejemplar.objects.create(registro=registro, codigo_barras='EJ-EXIST-1')
+
+        archivo = _xlsx_bytes([
+            ['TITULO', 'AUTOR', 'CANTIDAD'],
+            ['Libro Existente', 'Autor Existente', 2],
+        ])
+        resultado = importar_libros_xlsx(archivo)
+        self.assertEqual(resultado['nuevos'], 0)
+        self.assertEqual(resultado['actualizados'], 1)
+        self.assertEqual(RegistroBibliografico.objects.filter(titulo='Libro Existente').count(), 1)
+        registro.refresh_from_db()
+        self.assertEqual(registro.ejemplares.count(), 3)
+
+    def test_encabezados_en_otro_orden_se_detectan_por_nombre(self):
+        archivo = _xlsx_bytes([
+            ['AUTOR', 'CANTIDAD', 'TITULO'],
+            ['Autor Orden', 1, 'Libro Orden'],
+        ])
+        resultado = importar_libros_xlsx(archivo)
+        self.assertEqual(resultado['nuevos'], 1)
+        self.assertTrue(RegistroBibliografico.objects.filter(titulo='Libro Orden').exists())
+
+    def test_fila_sin_titulo_o_autor_se_ignora(self):
+        archivo = _xlsx_bytes([
+            ['TITULO', 'AUTOR'],
+            ['', 'Autor sin título'],
+            ['Libro sin autor', ''],
+            ['Libro Válido', 'Autor Válido'],
+        ])
+        resultado = importar_libros_xlsx(archivo)
+        self.assertEqual(resultado['nuevos'], 1)
+        self.assertEqual(len(resultado['resultados']), 1)
+
+    def test_archivo_sin_columna_titulo_devuelve_error_controlado(self):
+        archivo = _xlsx_bytes([
+            ['AUTOR', 'CANTIDAD'],
+            ['Autor X', 1],
+        ])
+        resultado = importar_libros_xlsx(archivo)
+        self.assertIn('error', resultado)
+        self.assertEqual(resultado['nuevos'], 0)
+
+
+class ExcelInventarioGeneracionTests(TestCase):
+    def test_generar_plantilla_produce_workbook_con_encabezados_esperados(self):
+        wb = generar_plantilla_xlsx()
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        wb_leido = openpyxl.load_workbook(buffer)
+        encabezados = [c.value for c in next(wb_leido.active.iter_rows(min_row=1, max_row=1))]
+        self.assertEqual(encabezados, TEMPLATE_HEADERS)
+
+    def test_exportar_inventario_incluye_registros_existentes(self):
+        registro = RegistroBibliografico.objects.create(titulo='Libro Exportado')
+        Ejemplar.objects.create(registro=registro, codigo_barras='EJ-EXPORT-1')
+
+        wb = exportar_inventario_xlsx('todos')
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        wb_leido = openpyxl.load_workbook(buffer)
+        titulos = [fila[0].value for fila in wb_leido.active.iter_rows(min_row=2)]
+        self.assertIn('Libro Exportado', titulos)
+
+
+class PanelBibliotecaExcelVistasAccesoTests(TestCase):
+    def setUp(self):
+        self.registro = RegistroBibliografico.objects.create(titulo='Libro Acceso')
+        Ejemplar.objects.create(registro=self.registro, codigo_barras='EJ-ACCESO-1')
+
+    def _cliente_sin_permiso(self, username):
+        usuario = User.objects.create_user(username, f'{username}@example.com', 'x', is_staff=True)
+        client = Client()
+        client.force_login(usuario)
+        return client
+
+    def _cliente_con_permiso(self, username):
+        usuario = User.objects.create_user(username, f'{username}@example.com', 'x', is_staff=True)
+        permiso = Permission.objects.get(
+            content_type__app_label='catalogo', codename='view_registrobibliografico'
+        )
+        usuario.user_permissions.add(permiso)
+        client = Client()
+        client.force_login(usuario)
+        return client
+
+    def test_sin_permiso_no_puede_acceder_a_importar(self):
+        client = self._cliente_sin_permiso('sin_permiso_importar')
+        response = client.get(reverse('admin:catalogo_panel_biblioteca_importar'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_sin_permiso_no_puede_acceder_a_plantilla(self):
+        client = self._cliente_sin_permiso('sin_permiso_plantilla')
+        response = client.get(reverse('admin:catalogo_panel_biblioteca_plantilla'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_sin_permiso_no_puede_acceder_a_exportar(self):
+        client = self._cliente_sin_permiso('sin_permiso_exportar')
+        response = client.get(reverse('admin:catalogo_panel_biblioteca_exportar'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_sin_permiso_no_puede_acceder_a_imprimir(self):
+        client = self._cliente_sin_permiso('sin_permiso_imprimir')
+        response = client.get(reverse('admin:catalogo_panel_biblioteca_imprimir'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_con_permiso_puede_descargar_plantilla(self):
+        client = self._cliente_con_permiso('con_permiso_plantilla')
+        response = client.get(reverse('admin:catalogo_panel_biblioteca_plantilla'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response['Content-Type'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+
+    def test_con_permiso_puede_exportar_e_imprimir(self):
+        client = self._cliente_con_permiso('con_permiso_exportar')
+        response = client.get(reverse('admin:catalogo_panel_biblioteca_exportar'), {'tipo': 'todos'})
+        self.assertEqual(response.status_code, 200)
+
+        response = client.get(reverse('admin:catalogo_panel_biblioteca_imprimir'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Libro Acceso')
+
+    def test_con_permiso_puede_ver_formulario_de_importar(self):
+        client = self._cliente_con_permiso('con_permiso_importar')
+        response = client.get(reverse('admin:catalogo_panel_biblioteca_importar'))
+        self.assertEqual(response.status_code, 200)

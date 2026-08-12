@@ -1,0 +1,60 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content_title %}<h1>Importar libros desde Excel</h1>{% endblock %}
+
+{% block content %}
+    <div class="col-12">
+        <div class="card mb-3 importar-info-card">
+            <div class="card-body">
+                <p>Sube un archivo <strong>.xlsx</strong> con columnas TITULO, AUTOR, EDITORIAL, EDICION,
+                    CANTIDAD, CATEGORIA e ISBN (en cualquier orden).
+                    Si el libro ya existe (mismo título y autor), solo se agregan ejemplares nuevos.</p>
+                <p><a href="{% url 'admin:catalogo_panel_biblioteca_plantilla' %}">Descargar plantilla</a></p>
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="importar-form">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <input type="submit" value="Importar" class="button default">
+            <a href="{% url 'admin:catalogo_panel_biblioteca' %}" class="button">Volver al panel</a>
+        </form>
+
+        {% if resultado and not resultado.error %}
+            <div class="card mt-3 importar-resultado-card">
+                <div class="card-body">
+                    <p><strong>Nuevos:</strong> {{ resultado.nuevos }} ·
+                        <strong>Actualizados:</strong> {{ resultado.actualizados }} ·
+                        <strong>Errores:</strong> {{ resultado.errores }}</p>
+                    {% if resultado.resultados %}
+                        <table class="importar-tabla">
+                            <thead>
+                                <tr><th>Fila</th><th>Estado</th><th>Título</th><th>Autor</th><th>Detalle</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for r in resultado.resultados %}
+                                    <tr>
+                                        <td>{{ r.fila }}</td>
+                                        <td>{{ r.estado }}</td>
+                                        <td>{{ r.titulo }}</td>
+                                        <td>{{ r.autor }}</td>
+                                        <td>{% if r.estado == 'error' %}{{ r.error }}{% else %}{{ r.cantidad }} ejemplar(es){% endif %}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <style>
+        .importar-info-card, .importar-resultado-card { border-left: 6px solid #1f9d5a !important; }
+        .importar-form { margin-top: 16px; }
+        .importar-form input[type="submit"] { margin-right: 8px; }
+        .importar-tabla { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+        .importar-tabla th, .importar-tabla td { padding: 6px 8px; border-bottom: 1px solid #eee; text-align: left; }
+    </style>
+{% endblock %}

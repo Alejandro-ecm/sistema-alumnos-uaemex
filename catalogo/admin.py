@@ -1,18 +1,31 @@
 from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.template.response import TemplateResponse
 from django.urls import path
+from django.utils import timezone
 from django.utils.html import format_html
 
 from proyecto.admin_utils import accion_exportar_csv
 
 from .constancia_donacion import generar_constancia_donacion_docx
+from .excel_inventario import exportar_inventario_xlsx, generar_plantilla_xlsx, importar_libros_xlsx
+from .forms import ImportarLibrosForm
 from .marc import generar_marc_xml
 from .models import (
     Autor, AutorRegistro, ConstanciaDonacion, ConstanciaDonacionLibro,
     Editorial, Ejemplar, Materia, RegistroBibliografico,
 )
+
+
+def _respuesta_xlsx(workbook, nombre_archivo):
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+    workbook.save(response)
+    return response
 
 
 class AutorRegistroInline(admin.TabularInline):
@@ -68,6 +81,14 @@ class RegistroBibliograficoAdmin(admin.ModelAdmin):
         extra = [
             path('panel-biblioteca/', self.admin_site.admin_view(self.panel_biblioteca),
                  name='catalogo_panel_biblioteca'),
+            path('panel-biblioteca/importar/', self.admin_site.admin_view(self.panel_biblioteca_importar),
+                 name='catalogo_panel_biblioteca_importar'),
+            path('panel-biblioteca/plantilla/', self.admin_site.admin_view(self.panel_biblioteca_plantilla),
+                 name='catalogo_panel_biblioteca_plantilla'),
+            path('panel-biblioteca/exportar/', self.admin_site.admin_view(self.panel_biblioteca_exportar),
+                 name='catalogo_panel_biblioteca_exportar'),
+            path('panel-biblioteca/imprimir/', self.admin_site.admin_view(self.panel_biblioteca_imprimir),
+                 name='catalogo_panel_biblioteca_imprimir'),
         ]
         return extra + urls
 
@@ -75,7 +96,8 @@ class RegistroBibliograficoAdmin(admin.ModelAdmin):
         if not request.user.has_perm('catalogo.view_registrobibliografico'):
             raise PermissionDenied
         # import local: catalogo no depende de circulacion a nivel de módulo
-        from circulacion.services import resumen_multas, resumen_prestamos
+        from circulacion.services import multas_por_libro, multas_recientes, resumen_multas, resumen_prestamos
+        from .services import actividad_mensual, top_libros
         resumen = resumen_prestamos()
         multas = resumen_multas()
         context = {
@@ -85,13 +107,79 @@ class RegistroBibliograficoAdmin(admin.ModelAdmin):
             'ejemplares_disponibles': Ejemplar.objects.filter(estado='DISPONIBLE').count(),
             'prestamos_activos': resumen.activos,
             'prestamos_vencidos': resumen.vencidos,
+            'resumen_prestamos': resumen,
             'libros_recientes': RegistroBibliografico.objects.order_by('-fecha_alta')[:5],
             'constancias_recientes': ConstanciaDonacion.objects.select_related('generado_por')
                 .prefetch_related('libros__registro')[:5],
             'constancias_total': ConstanciaDonacion.objects.count(),
             'multas': multas,
+            'top_libros': top_libros(),
+            'actividad': actividad_mensual(),
+            'multas_por_libro': multas_por_libro(),
+            'multas_recientes': multas_recientes(),
         }
         return TemplateResponse(request, 'catalogo/panel_biblioteca.html', context)
+
+    def panel_biblioteca_importar(self, request):
+        if not request.user.has_perm('catalogo.view_registrobibliografico'):
+            raise PermissionDenied
+        resultado = None
+        if request.method == 'POST':
+            form = ImportarLibrosForm(request.POST, request.FILES)
+            if form.is_valid():
+                resultado = importar_libros_xlsx(form.cleaned_data['archivo'])
+                if resultado.get('error'):
+                    self.message_user(request, resultado['error'], level=messages.ERROR)
+                else:
+                    self.message_user(
+                        request,
+                        f"Importación lista: {resultado['nuevos']} nuevo(s), "
+                        f"{resultado['actualizados']} actualizado(s)"
+                        + (f", {resultado['errores']} error(es)" if resultado['errores'] else ''),
+                    )
+                form = ImportarLibrosForm()
+        else:
+            form = ImportarLibrosForm()
+
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Importar libros desde Excel',
+            'form': form,
+            'resultado': resultado,
+        }
+        return TemplateResponse(request, 'catalogo/importar_libros.html', context)
+
+    def panel_biblioteca_plantilla(self, request):
+        if not request.user.has_perm('catalogo.view_registrobibliografico'):
+            raise PermissionDenied
+        return _respuesta_xlsx(generar_plantilla_xlsx(), 'plantilla_inventario.xlsx')
+
+    def panel_biblioteca_exportar(self, request):
+        if not request.user.has_perm('catalogo.view_registrobibliografico'):
+            raise PermissionDenied
+        tipo = request.GET.get('tipo', 'todos')
+        fecha = timezone.now().strftime('%Y-%m-%d')
+        nombres = {
+            'este_mes': f'libros_este_mes_{fecha}.xlsx',
+            'ultima_carga': f'ultima_carga_{fecha}.xlsx',
+        }
+        nombre_archivo = nombres.get(tipo, f'inventario_{fecha}.xlsx')
+        return _respuesta_xlsx(exportar_inventario_xlsx(tipo), nombre_archivo)
+
+    def panel_biblioteca_imprimir(self, request):
+        if not request.user.has_perm('catalogo.view_registrobibliografico'):
+            raise PermissionDenied
+        registros = RegistroBibliografico.objects.select_related('editorial').prefetch_related('autores').annotate(
+            total_ejemplares=Count('ejemplares', distinct=True),
+            disponibles=Count('ejemplares', filter=Q(ejemplares__estado='DISPONIBLE'), distinct=True),
+            prestados=Count('ejemplares', filter=Q(ejemplares__estado='PRESTADO'), distinct=True),
+        ).order_by('titulo')
+        context = {
+            'title': 'Inventario de biblioteca',
+            'registros': registros,
+            'fecha_impresion': timezone.now(),
+        }
+        return TemplateResponse(request, 'catalogo/imprimir_inventario.html', context)
 
 
 @admin.register(Autor)

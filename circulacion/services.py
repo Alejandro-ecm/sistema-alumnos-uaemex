@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from django.db.models import Sum
+from django.db.models import Count, Sum
 from django.utils import timezone
 
 from .models import Prestamo
@@ -30,12 +30,17 @@ def no_adeudo(alumno) -> EstadoAdeudo:
 class ResumenPrestamos:
     activos: int
     vencidos: int
+    devueltos: int
+    total: int
 
 
 def resumen_prestamos() -> ResumenPrestamos:
     activos_qs = Prestamo.objects.filter(estado='ACTIVO')
     vencidos = activos_qs.filter(fecha_vencimiento__lt=timezone.now().date()).count()
-    return ResumenPrestamos(activos=activos_qs.count(), vencidos=vencidos)
+    devueltos = Prestamo.objects.filter(estado='DEVUELTO').count()
+    return ResumenPrestamos(
+        activos=activos_qs.count(), vencidos=vencidos, devueltos=devueltos, total=Prestamo.objects.count()
+    )
 
 
 @dataclass
@@ -58,6 +63,23 @@ def resumen_multas() -> ResumenMultas:
         total_cobrado=agregados['cobrado'] or Decimal('0'),
         total_descuentos=agregados['descuentos'] or Decimal('0'),
         pendientes=con_multa_qs.filter(multa_pagada=False).count(),
+    )
+
+
+def multas_recientes(limite: int = 15):
+    return (
+        Prestamo.objects.filter(multa_total__gt=0)
+        .select_related('ejemplar__registro', 'alumno')
+        .order_by('-fecha_devolucion')[:limite]
+    )
+
+
+def multas_por_libro():
+    return (
+        Prestamo.objects.filter(multa_total__gt=0)
+        .values('ejemplar__registro__titulo')
+        .annotate(total_multas=Sum('multa_total'), veces=Count('id'))
+        .order_by('-total_multas')
     )
 
 

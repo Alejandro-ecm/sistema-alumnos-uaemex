@@ -5,3 +5,4 @@ python-docx==1.2.0
 whitenoise==6.7.0
 gunicorn==21.2.0
 pymarc==5.4.0
+openpyxl==3.1.5

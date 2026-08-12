@@ -11,7 +11,9 @@ from alumnos.models import Alumno
 from catalogo.models import Ejemplar, RegistroBibliografico
 
 from .models import PLAZO_PRESTAMO_DIAS, TARIFA_MULTA_DIA, Prestamo
-from .services import alumnos_con_adeudo_count, no_adeudo, resumen_multas, resumen_prestamos
+from .services import (
+    alumnos_con_adeudo_count, multas_por_libro, multas_recientes, no_adeudo, resumen_multas, resumen_prestamos,
+)
 
 
 class PrestamoTests(TestCase):
@@ -258,6 +260,18 @@ class ResumenPrestamosTests(TestCase):
         self.assertEqual(resultado.activos, 2)
         self.assertEqual(resultado.vencidos, 1)
 
+    def test_resumen_cuenta_devueltos_y_total(self):
+        manana = timezone.now().date() + datetime.timedelta(days=1)
+        ayer = timezone.now().date() - datetime.timedelta(days=1)
+        Prestamo.objects.create(ejemplar=self.ej_activo, alumno=self.alumno, fecha_vencimiento=manana)
+        Prestamo.objects.create(ejemplar=self.ej_vencido, alumno=self.alumno, fecha_vencimiento=ayer)
+        devuelto = Prestamo.objects.create(ejemplar=self.ej_devuelto, alumno=self.alumno, fecha_vencimiento=ayer)
+        devuelto.marcar_devuelto()
+
+        resultado = resumen_prestamos()
+        self.assertEqual(resultado.devueltos, 1)
+        self.assertEqual(resultado.total, 3)
+
 
 class ResumenMultasTests(TestCase):
     def setUp(self):
@@ -292,6 +306,50 @@ class ResumenMultasTests(TestCase):
         self.assertEqual(resultado.total_cobrado, 35)
         self.assertEqual(resultado.total_descuentos, 5)
         self.assertEqual(resultado.pendientes, 1)
+
+
+class MultasPorLibroYRecientesTests(TestCase):
+    def setUp(self):
+        self.registro_a = RegistroBibliografico.objects.create(titulo='Ficciones')
+        self.registro_b = RegistroBibliografico.objects.create(titulo='El Aleph')
+        self.alumno = Alumno.objects.create(
+            nombre='ALUMNO MULTAS DETALLE TEST', numero_cuenta='9998895', carrera='MEDICO', facultad='MEDICINA'
+        )
+        self.ej_a1 = Ejemplar.objects.create(registro=self.registro_a, codigo_barras='EJ-0015')
+        self.ej_a2 = Ejemplar.objects.create(registro=self.registro_a, codigo_barras='EJ-0016')
+        self.ej_b1 = Ejemplar.objects.create(registro=self.registro_b, codigo_barras='EJ-0017')
+        self.ej_sin_atraso = Ejemplar.objects.create(registro=self.registro_b, codigo_barras='EJ-0018')
+
+    def test_multas_por_libro_agrupa_y_suma_por_registro(self):
+        hace_dos_dias = timezone.now().date() - datetime.timedelta(days=2)
+        hace_un_dia = timezone.now().date() - datetime.timedelta(days=1)
+        manana = timezone.now().date() + datetime.timedelta(days=1)
+
+        p1 = Prestamo.objects.create(ejemplar=self.ej_a1, alumno=self.alumno, fecha_vencimiento=hace_dos_dias)
+        p1.marcar_devuelto()
+        p2 = Prestamo.objects.create(ejemplar=self.ej_a2, alumno=self.alumno, fecha_vencimiento=hace_un_dia)
+        p2.marcar_devuelto()
+        p3 = Prestamo.objects.create(ejemplar=self.ej_b1, alumno=self.alumno, fecha_vencimiento=hace_un_dia)
+        p3.marcar_devuelto()
+        Prestamo.objects.create(ejemplar=self.ej_sin_atraso, alumno=self.alumno, fecha_vencimiento=manana)
+
+        por_libro = {item['ejemplar__registro__titulo']: item for item in multas_por_libro()}
+        self.assertEqual(por_libro['Ficciones']['veces'], 2)
+        self.assertEqual(por_libro['Ficciones']['total_multas'], 3 * TARIFA_MULTA_DIA)
+        self.assertEqual(por_libro['El Aleph']['veces'], 1)
+        self.assertEqual(por_libro['El Aleph']['total_multas'], 1 * TARIFA_MULTA_DIA)
+
+    def test_multas_recientes_excluye_prestamos_sin_multa_y_ordena_por_fecha_devolucion(self):
+        hace_un_dia = timezone.now().date() - datetime.timedelta(days=1)
+        manana = timezone.now().date() + datetime.timedelta(days=1)
+
+        con_multa = Prestamo.objects.create(ejemplar=self.ej_a1, alumno=self.alumno, fecha_vencimiento=hace_un_dia)
+        con_multa.marcar_devuelto()
+        Prestamo.objects.create(ejemplar=self.ej_sin_atraso, alumno=self.alumno, fecha_vencimiento=manana)
+
+        recientes = list(multas_recientes())
+        self.assertEqual(len(recientes), 1)
+        self.assertEqual(recientes[0].pk, con_multa.pk)
 
 
 class AlumnosConAdeudoCountTests(TestCase):

@@ -1,149 +1,343 @@
 {% extends "admin/base_site.html" %}
-{% load i18n %}
+{% load i18n static %}
 
-{% block content_title %}<h1>Panel Biblioteca</h1>{% endblock %}
+{% block content_title %}{% endblock %}
 
 {% block content %}
     <div class="col-12">
-        <div class="row">
-            <div class="col-md-3 col-sm-6">
-                <div class="card mb-3 panel-stat-card">
-                    <div class="card-body panel-stat-body">
-                        <div class="panel-stat-icon"><i class="fas fa-book"></i></div>
-                        <div>
-                            <div class="panel-stat-num">{{ total_ejemplares }}</div>
-                            <div class="panel-stat-label">Ejemplares totales</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
-                <div class="card mb-3 panel-stat-card">
-                    <div class="card-body panel-stat-body">
-                        <div class="panel-stat-icon"><i class="fas fa-check-circle"></i></div>
-                        <div>
-                            <div class="panel-stat-num">{{ ejemplares_disponibles }}</div>
-                            <div class="panel-stat-label">Ejemplares disponibles</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
-                <div class="card mb-3 panel-stat-card">
-                    <div class="card-body panel-stat-body">
-                        <div class="panel-stat-icon"><i class="fas fa-clipboard-list"></i></div>
-                        <div>
-                            <div class="panel-stat-num">{{ prestamos_activos }}</div>
-                            <div class="panel-stat-label">Préstamos activos</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
-                <div class="card mb-3 panel-stat-card">
-                    <div class="card-body panel-stat-body">
-                        <div class="panel-stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
-                        <div>
-                            <div class="panel-stat-num">{{ prestamos_vencidos }}</div>
-                            <div class="panel-stat-label">Préstamos vencidos</div>
-                        </div>
-                    </div>
-                </div>
+        <div class="pm-banner">
+            <img src="{% static 'img/fondobiblioteca.jpg' %}" alt="Biblioteca" class="pm-banner-img">
+            <div class="pm-banner-overlay">
+                <h1>Biblioteca de Área de Medicina y Química</h1>
+                <p>Panel de administración del Bibliotecario</p>
             </div>
         </div>
     </div>
 
     <div class="col-12">
-        <div class="row">
-            <div class="col-md-4 col-sm-12">
-                <a href="{% url 'admin:catalogo_registrobibliografico_changelist' %}" class="pm-card-link">
-                    <div class="card mb-3 pm-card">
-                        <div class="card-body pm-card-body">
-                            <div class="pm-card-icon"><i class="fas fa-book-open"></i></div>
-                            <div>
-                                <div class="pm-card-title">Catálogo</div>
-                                <div class="pm-card-desc">Alta, edición y búsqueda de registros bibliográficos.</div>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-md-4 col-sm-12">
-                <a href="{% url 'admin:catalogo_ejemplar_changelist' %}" class="pm-card-link">
-                    <div class="card mb-3 pm-card">
-                        <div class="card-body pm-card-body">
-                            <div class="pm-card-icon"><i class="fas fa-barcode"></i></div>
-                            <div>
-                                <div class="pm-card-title">Ejemplares</div>
-                                <div class="pm-card-desc">Estado y ubicación de cada copia física.</div>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-md-4 col-sm-12">
-                <a href="{% url 'admin:circulacion_prestamo_changelist' %}" class="pm-card-link">
-                    <div class="card mb-3 pm-card">
-                        <div class="card-body pm-card-body">
-                            <div class="pm-card-icon"><i class="fas fa-exchange-alt"></i></div>
-                            <div>
-                                <div class="pm-card-title">Préstamos</div>
-                                <div class="pm-card-desc">Registrar, devolver y marcar como perdidos.</div>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
+        <div class="pm-tabs" role="tablist">
+            <button type="button" class="pm-tab active" data-pm-tab="resumen">Resumen</button>
+            <button type="button" class="pm-tab" data-pm-tab="actividad">Actividad y multas</button>
+            <button type="button" class="pm-tab" data-pm-tab="importar">Importar/Exportar</button>
         </div>
     </div>
 
-    <div class="col-12">
-        <div class="row">
-            <div class="col-md-4 col-sm-12">
-                <a href="{% url 'admin:catalogo_constanciadonacion_changelist' %}" class="pm-card-link">
-                    <div class="card mb-3 pm-card">
-                        <div class="card-body pm-card-body">
-                            <div class="pm-card-icon"><i class="fas fa-file-word"></i></div>
+    <div class="pm-tab-panel active" id="pm-panel-resumen">
+        <div class="col-12">
+            <div class="row">
+                <div class="col-md-3 col-sm-6">
+                    <div class="card mb-3 panel-stat-card">
+                        <div class="card-body panel-stat-body">
+                            <div class="panel-stat-icon"><i class="fas fa-book"></i></div>
                             <div>
-                                <div class="pm-card-title">Constancias de donación</div>
-                                <div class="pm-card-desc">{{ constancias_total }} constancia(s) generada(s).</div>
+                                <div class="panel-stat-num" data-count="{{ total_ejemplares }}">0</div>
+                                <div class="panel-stat-label">Ejemplares totales</div>
                             </div>
                         </div>
                     </div>
-                </a>
-            </div>
-            <div class="col-md-4 col-sm-12">
-                <a href="{% url 'admin:circulacion_prestamo_changelist' %}?multa_total__gt=0" class="pm-card-link">
-                    <div class="card mb-3 pm-card">
-                        <div class="card-body pm-card-body">
-                            <div class="pm-card-icon"><i class="fas fa-coins"></i></div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card mb-3 panel-stat-card">
+                        <div class="card-body panel-stat-body">
+                            <div class="panel-stat-icon"><i class="fas fa-check-circle"></i></div>
                             <div>
-                                <div class="pm-card-title">Multas</div>
-                                <div class="pm-card-desc">
-                                    Generado: ${{ multas.total_generado }} ·
-                                    Cobrado: ${{ multas.total_cobrado }} ·
-                                    Pendientes: {{ multas.pendientes }}
+                                <div class="panel-stat-num" data-count="{{ ejemplares_disponibles }}">0</div>
+                                <div class="panel-stat-label">Ejemplares disponibles</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card mb-3 panel-stat-card">
+                        <div class="card-body panel-stat-body">
+                            <div class="panel-stat-icon"><i class="fas fa-clipboard-list"></i></div>
+                            <div>
+                                <div class="panel-stat-num" data-count="{{ prestamos_activos }}">0</div>
+                                <div class="panel-stat-label">Préstamos activos</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card mb-3 panel-stat-card">
+                        <div class="card-body panel-stat-body">
+                            <div class="panel-stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div>
+                                <div class="panel-stat-num" data-count="{{ prestamos_vencidos }}">0</div>
+                                <div class="panel-stat-label">Préstamos vencidos</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="row">
+                <div class="col-md-6 col-sm-12">
+                    <div class="card mb-3 pm-block-card">
+                        <div class="card-body">
+                            <div class="pm-block-title">Libros más solicitados</div>
+                            <ul class="pm-recent-list">
+                                {% for registro in top_libros %}
+                                    <li>
+                                        <a href="{% url 'admin:catalogo_registrobibliografico_change' registro.pk %}">
+                                            {{ registro.titulo }}
+                                        </a>
+                                        <span class="pm-badge">{{ registro.veces_prestado }} préstamo(s)</span>
+                                    </li>
+                                {% empty %}
+                                    <li>Aún no hay préstamos registrados.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-sm-12">
+                    <div class="card mb-3 pm-block-card">
+                        <div class="card-body">
+                            <div class="pm-block-title">Estado de préstamos</div>
+                            <div class="pm-bar-row">
+                                <div class="pm-bar-label">Activos ({{ resumen_prestamos.activos }})</div>
+                                <div class="pm-bar-track">
+                                    <div class="pm-bar-fill pm-bar-activos" style="width: {% widthratio resumen_prestamos.activos resumen_prestamos.total 100 %}%;"></div>
+                                </div>
+                            </div>
+                            <div class="pm-bar-row">
+                                <div class="pm-bar-label">Devueltos ({{ resumen_prestamos.devueltos }})</div>
+                                <div class="pm-bar-track">
+                                    <div class="pm-bar-fill pm-bar-devueltos" style="width: {% widthratio resumen_prestamos.devueltos resumen_prestamos.total 100 %}%;"></div>
+                                </div>
+                            </div>
+                            <div class="pm-bar-row">
+                                <div class="pm-bar-label">Vencidos ({{ resumen_prestamos.vencidos }})</div>
+                                <div class="pm-bar-track">
+                                    <div class="pm-bar-fill pm-bar-vencidos" style="width: {% widthratio resumen_prestamos.vencidos resumen_prestamos.total 100 %}%;"></div>
+                                </div>
+                            </div>
+                            {% if not resumen_prestamos.total %}
+                                <p class="pm-vacio">Aún no hay préstamos registrados.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="row">
+                <div class="col-md-4 col-sm-12">
+                    <a href="{% url 'admin:catalogo_registrobibliografico_changelist' %}" class="pm-card-link">
+                        <div class="card mb-3 pm-card">
+                            <div class="card-body pm-card-body">
+                                <div class="pm-card-icon"><i class="fas fa-book-open"></i></div>
+                                <div>
+                                    <div class="pm-card-title">Catálogo</div>
+                                    <div class="pm-card-desc">Alta, edición y búsqueda de registros bibliográficos.</div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </a>
+                    </a>
+                </div>
+                <div class="col-md-4 col-sm-12">
+                    <a href="{% url 'admin:catalogo_ejemplar_changelist' %}" class="pm-card-link">
+                        <div class="card mb-3 pm-card">
+                            <div class="card-body pm-card-body">
+                                <div class="pm-card-icon"><i class="fas fa-barcode"></i></div>
+                                <div>
+                                    <div class="pm-card-title">Ejemplares</div>
+                                    <div class="pm-card-desc">Estado y ubicación de cada copia física.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-4 col-sm-12">
+                    <a href="{% url 'admin:circulacion_prestamo_changelist' %}" class="pm-card-link">
+                        <div class="card mb-3 pm-card">
+                            <div class="card-body pm-card-body">
+                                <div class="pm-card-icon"><i class="fas fa-exchange-alt"></i></div>
+                                <div>
+                                    <div class="pm-card-title">Préstamos</div>
+                                    <div class="pm-card-desc">Registrar, devolver y marcar como perdidos.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
             </div>
-            <div class="col-md-4 col-sm-12">
-                <div class="card mb-3 pm-card pm-list-card">
-                    <div class="card-body pm-card-body pm-list-body">
-                        <div class="pm-card-title">Libros agregados recientemente</div>
-                        <ul class="pm-recent-list">
-                            {% for registro in libros_recientes %}
-                                <li>
-                                    <a href="{% url 'admin:catalogo_registrobibliografico_change' registro.pk %}">
-                                        {{ registro.titulo }}
-                                    </a>
-                                </li>
-                            {% empty %}
-                                <li>Aún no hay registros bibliográficos.</li>
-                            {% endfor %}
-                        </ul>
+        </div>
+
+        <div class="col-12">
+            <div class="row">
+                <div class="col-md-12 col-sm-12">
+                    <div class="card mb-3 pm-card pm-list-card">
+                        <div class="card-body pm-card-body pm-list-body">
+                            <div class="pm-card-title">Libros agregados recientemente</div>
+                            <ul class="pm-recent-list">
+                                {% for registro in libros_recientes %}
+                                    <li>
+                                        <a href="{% url 'admin:catalogo_registrobibliografico_change' registro.pk %}">
+                                            {{ registro.titulo }}
+                                        </a>
+                                    </li>
+                                {% empty %}
+                                    <li>Aún no hay registros bibliográficos.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="pm-tab-panel" id="pm-panel-actividad">
+        <div class="col-12">
+            <div class="row">
+                <div class="col-md-3 col-sm-6">
+                    <div class="card mb-3 panel-stat-card">
+                        <div class="card-body panel-stat-body">
+                            <div class="panel-stat-icon"><i class="fas fa-book-medical"></i></div>
+                            <div>
+                                <div class="panel-stat-num" data-count="{{ actividad.libros_mes_actual }}">0</div>
+                                <div class="panel-stat-label">Títulos nuevos este mes ({{ actividad.libros_mes_anterior }} el mes pasado)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card mb-3 panel-stat-card">
+                        <div class="card-body panel-stat-body">
+                            <div class="panel-stat-icon"><i class="fas fa-file-word"></i></div>
+                            <div>
+                                <div class="panel-stat-num" data-count="{{ actividad.constancias_mes_actual }}">0</div>
+                                <div class="panel-stat-label">Constancias este mes ({{ actividad.constancias_mes_anterior }} el mes pasado)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <a href="{% url 'admin:catalogo_constanciadonacion_changelist' %}" class="pm-card-link">
+                        <div class="card mb-3 pm-card">
+                            <div class="card-body pm-card-body">
+                                <div class="pm-card-icon"><i class="fas fa-file-word"></i></div>
+                                <div>
+                                    <div class="pm-card-title">Constancias</div>
+                                    <div class="pm-card-desc">{{ constancias_total }} constancia(s) generada(s).</div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <a href="{% url 'admin:circulacion_prestamo_changelist' %}?multa_total__gt=0" class="pm-card-link">
+                        <div class="card mb-3 pm-card">
+                            <div class="card-body pm-card-body">
+                                <div class="pm-card-icon"><i class="fas fa-coins"></i></div>
+                                <div>
+                                    <div class="pm-card-title">Multas</div>
+                                    <div class="pm-card-desc">
+                                        Generado: ${{ multas.total_generado }} ·
+                                        Cobrado: ${{ multas.total_cobrado }} ·
+                                        Pendientes: {{ multas.pendientes }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="row">
+                <div class="col-md-6 col-sm-12">
+                    <div class="card mb-3 pm-block-card">
+                        <div class="card-body">
+                            <div class="pm-block-title">Cobros por libro</div>
+                            <table class="pm-tabla">
+                                <thead>
+                                    <tr><th>Título</th><th>Multas</th><th>Total</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in multas_por_libro %}
+                                        <tr>
+                                            <td>{{ item.ejemplar__registro__titulo }}</td>
+                                            <td>{{ item.veces }}</td>
+                                            <td>${{ item.total_multas }}</td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr><td colspan="3">Aún no hay multas registradas.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-sm-12">
+                    <div class="card mb-3 pm-block-card">
+                        <div class="card-body">
+                            <div class="pm-block-title">Historial reciente</div>
+                            <table class="pm-tabla">
+                                <thead>
+                                    <tr><th>Título</th><th>Alumno</th><th>Multa</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for prestamo in multas_recientes %}
+                                        <tr>
+                                            <td>{{ prestamo.ejemplar.registro.titulo }}</td>
+                                            <td>{{ prestamo.alumno|default:'—' }}</td>
+                                            <td>${{ prestamo.multa_total }}</td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr><td colspan="3">Aún no hay multas registradas.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="pm-tab-panel" id="pm-panel-importar">
+        <div class="col-12">
+            <div class="row">
+                <div class="col-md-6 col-sm-12">
+                    <div class="card mb-3 pm-block-card">
+                        <div class="card-body">
+                            <div class="pm-block-title">Importar inventario</div>
+                            <p>Sube un archivo Excel con los libros a dar de alta o para agregar ejemplares a
+                                libros ya existentes.</p>
+                            <a href="{% url 'admin:catalogo_panel_biblioteca_plantilla' %}" class="button">
+                                <i class="fas fa-file-download"></i> Descargar plantilla
+                            </a>
+                            <a href="{% url 'admin:catalogo_panel_biblioteca_importar' %}" class="button default">
+                                <i class="fas fa-file-upload"></i> Importar desde Excel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-sm-12">
+                    <div class="card mb-3 pm-block-card">
+                        <div class="card-body">
+                            <div class="pm-block-title">Exportar / imprimir</div>
+                            <p>Descarga el inventario en Excel o imprime una lista completa.</p>
+                            <a href="{% url 'admin:catalogo_panel_biblioteca_exportar' %}?tipo=todos" class="button">
+                                <i class="fas fa-file-excel"></i> Exportar todos
+                            </a>
+                            <a href="{% url 'admin:catalogo_panel_biblioteca_exportar' %}?tipo=este_mes" class="button">
+                                <i class="fas fa-file-excel"></i> Exportar este mes
+                            </a>
+                            <a href="{% url 'admin:catalogo_panel_biblioteca_exportar' %}?tipo=ultima_carga" class="button">
+                                <i class="fas fa-file-excel"></i> Exportar última carga
+                            </a>
+                            <a href="{% url 'admin:catalogo_panel_biblioteca_imprimir' %}" class="button" target="_blank">
+                                <i class="fas fa-print"></i> Imprimir lista
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -151,6 +345,28 @@
     </div>
 
     <style>
+        .pm-banner {
+            position: relative; width: 100%; height: 220px; border-radius: 12px;
+            overflow: hidden; margin-bottom: 18px; box-shadow: 0 6px 18px rgba(0,0,0,.18);
+        }
+        .pm-banner-img { width: 100%; height: 100%; object-fit: cover; object-position: center 40%; display: block; }
+        .pm-banner-overlay {
+            position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center;
+            padding: 0 32px; background: linear-gradient(90deg, rgba(11,46,26,.88) 0%, rgba(11,46,26,.45) 55%, rgba(11,46,26,0) 100%);
+        }
+        .pm-banner-overlay h1 { color: #fff; font-size: 26px; font-weight: 800; margin: 0 0 6px; }
+        .pm-banner-overlay p { color: #d8f5e3; font-size: 14px; margin: 0; }
+
+        .pm-tabs { display: flex; gap: 4px; border-bottom: 2px solid #e0e0e0; margin-bottom: 18px; flex-wrap: wrap; }
+        .pm-tab {
+            border: none; background: none; padding: 10px 18px; font-size: 14px; font-weight: 700;
+            color: #4a4a4a; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px;
+        }
+        .pm-tab:hover { color: #1b5e20; }
+        .pm-tab.active { color: #1b5e20; border-bottom-color: #1f9d5a; }
+        .pm-tab-panel { display: none; }
+        .pm-tab-panel.active { display: block; }
+
         .panel-stat-card { border-left: 6px solid #1f9d5a !important; }
         .panel-stat-body { display: flex; align-items: center; gap: 18px; }
         .panel-stat-icon {
@@ -182,9 +398,56 @@
         .pm-list-card:hover { transform: none; box-shadow: none; }
         .pm-list-body { display: block; }
         .pm-recent-list { list-style: none; margin: 8px 0 0; padding: 0; }
-        .pm-recent-list li { padding: 4px 0; font-size: 13px; border-bottom: 1px solid #eee; }
+        .pm-recent-list li { padding: 4px 0; font-size: 13px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; gap: 8px; }
         .pm-recent-list li:last-child { border-bottom: none; }
         .pm-recent-list a { color: #1b5e20; text-decoration: none; }
         .pm-recent-list a:hover { text-decoration: underline; }
+        .pm-badge {
+            background: #eafaf1; color: #1b5e20; border-radius: 10px; padding: 1px 9px;
+            font-size: 11px; font-weight: 700; white-space: nowrap;
+        }
+
+        .pm-block-card { border-left: 6px solid #1f9d5a !important; }
+        .pm-block-title { font-size: 16px; font-weight: 800; color: #1b5e20; margin-bottom: 10px; }
+        .pm-vacio { color: #777; font-size: 13px; margin: 8px 0 0; }
+
+        .pm-bar-row { margin-bottom: 12px; }
+        .pm-bar-label { font-size: 12px; font-weight: 700; color: #4a4a4a; margin-bottom: 4px; }
+        .pm-bar-track { background: #eee; border-radius: 6px; height: 12px; overflow: hidden; }
+        .pm-bar-fill { height: 100%; border-radius: 6px; transition: width .6s ease; }
+        .pm-bar-activos { background: #1f9d5a; }
+        .pm-bar-devueltos { background: #4a90d9; }
+        .pm-bar-vencidos { background: #e14b4b; }
+
+        .pm-tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .pm-tabla th, .pm-tabla td { padding: 6px 8px; border-bottom: 1px solid #eee; text-align: left; }
+        .pm-tabla th { color: #1b5e20; font-weight: 800; }
+
+        #pm-panel-importar .button { margin: 0 8px 8px 0; }
     </style>
+
+    <script>
+        document.querySelectorAll('.pm-tab').forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                document.querySelectorAll('.pm-tab').forEach(function (t) { t.classList.remove('active'); });
+                document.querySelectorAll('.pm-tab-panel').forEach(function (p) { p.classList.remove('active'); });
+                tab.classList.add('active');
+                document.getElementById('pm-panel-' + tab.dataset.pmTab).classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('.panel-stat-num[data-count]').forEach(function (el) {
+            var meta = parseInt(el.dataset.count, 10) || 0;
+            var inicio = null;
+            var duracion = 800;
+            function paso(marca) {
+                if (inicio === null) inicio = marca;
+                var avance = Math.min((marca - inicio) / duracion, 1);
+                el.textContent = Math.floor(avance * meta);
+                if (avance < 1) requestAnimationFrame(paso);
+                else el.textContent = meta;
+            }
+            requestAnimationFrame(paso);
+        });
+    </script>
 {% endblock %}
