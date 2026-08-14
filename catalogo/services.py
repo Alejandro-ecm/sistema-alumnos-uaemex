@@ -3,7 +3,38 @@ from dataclasses import dataclass
 from django.db.models import Count
 from django.utils import timezone
 
-from .models import ConstanciaDonacion, RegistroBibliografico
+from .marc import generar_marc_xml
+from .models import Autor, AutorRegistro, ConstanciaDonacion, Editorial, RegistroBibliografico
+
+
+def sincronizar_registro_desde_alumno(alumno):
+    """Crea o actualiza el Registro bibliográfico del catálogo a partir de los
+    datos del libro que el alumno llenó en su cuestionario de registro, y
+    genera/actualiza su MARC21. No hace nada si el alumno no capturó título.
+    """
+    if not (alumno.libro_titulo or '').strip():
+        return None
+
+    registro = getattr(alumno, 'registro_bibliografico', None) or RegistroBibliografico(alumno=alumno)
+    registro.titulo = alumno.libro_titulo.strip()
+    registro.edicion = (alumno.libro_edicion or '').strip()
+
+    editorial_nombre = (alumno.libro_editorial or '').strip()
+    if editorial_nombre:
+        registro.editorial, _ = Editorial.objects.get_or_create(nombre=editorial_nombre)
+
+    registro.save()
+
+    autor_nombre = (alumno.libro_autor or '').strip()
+    if autor_nombre:
+        autor, _ = Autor.objects.get_or_create(nombre=autor_nombre)
+        AutorRegistro.objects.get_or_create(
+            registro=registro, autor=autor, defaults={'rol': 'PRINCIPAL', 'orden': 1}
+        )
+
+    registro.marc_xml = generar_marc_xml(registro)
+    registro.save(update_fields=['marc_xml'])
+    return registro
 
 
 def top_libros(limite: int = 5):

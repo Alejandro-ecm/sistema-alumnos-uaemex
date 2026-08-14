@@ -2,6 +2,7 @@ from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
 from django.http import HttpResponse
+from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import path
 from django.utils import timezone
@@ -79,6 +80,10 @@ class RegistroBibliograficoAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         extra = [
+            path('marc21/', self.admin_site.admin_view(self.tabla_marc21),
+                 name='catalogo_marc21'),
+            path('marc21/generar-todos/', self.admin_site.admin_view(self.marc21_generar_todos),
+                 name='catalogo_marc21_generar_todos'),
             path('panel-biblioteca/', self.admin_site.admin_view(self.panel_biblioteca),
                  name='catalogo_panel_biblioteca'),
             path('panel-biblioteca/importar/', self.admin_site.admin_view(self.panel_biblioteca_importar),
@@ -91,6 +96,30 @@ class RegistroBibliograficoAdmin(admin.ModelAdmin):
                  name='catalogo_panel_biblioteca_imprimir'),
         ]
         return extra + urls
+
+    def tabla_marc21(self, request):
+        if not request.user.has_perm('catalogo.view_registrobibliografico'):
+            raise PermissionDenied
+        registros = RegistroBibliografico.objects.select_related('editorial', 'alumno').prefetch_related(
+            'autorregistro_set__autor'
+        ).order_by('-fecha_alta')
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'MARC21',
+            'registros': registros,
+        }
+        return TemplateResponse(request, 'catalogo/marc21.html', context)
+
+    def marc21_generar_todos(self, request):
+        if not request.user.has_perm('catalogo.view_registrobibliografico'):
+            raise PermissionDenied
+        actualizados = 0
+        for registro in RegistroBibliografico.objects.all():
+            registro.marc_xml = generar_marc_xml(registro)
+            registro.save(update_fields=['marc_xml'])
+            actualizados += 1
+        self.message_user(request, f'MARC21 generado para {actualizados} registro(s).')
+        return redirect('admin:catalogo_marc21')
 
     def panel_biblioteca(self, request):
         if not request.user.has_perm('catalogo.view_registrobibliografico'):

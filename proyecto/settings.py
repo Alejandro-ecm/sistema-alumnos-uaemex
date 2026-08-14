@@ -102,6 +102,11 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LOGOUT_REDIRECT_URL = '/admin/login/'
+LOGIN_URL = '/admin/login/'
+# El login.html de Jazzmin no manda el campo oculto "next" cuando no venía
+# en la URL, así que sin esto Django cae en el default '/accounts/profile/'
+# (inexistente) y muestra 404 tras iniciar sesión.
+LOGIN_REDIRECT_URL = '/admin/'
 
 LANGUAGE_CODE = 'es-mx'
 TIME_ZONE = 'America/Mexico_City'
@@ -153,8 +158,22 @@ JAZZMIN_SETTINGS = {
             "icon": "fas fa-video",
             "permissions": ["deteccion_libros.view_eventodeteccion"],
         }],
+        "catalogo": [{
+            "name": "MARC21",
+            "url": "admin:catalogo_marc21",
+            "icon": "fas fa-book",
+            "permissions": ["catalogo.view_registrobibliografico"],
+        }],
     },
-    "hide_models": ["deteccion_libros.eventodeteccion"],
+    "hide_models": [
+        "deteccion_libros.eventodeteccion",
+        "catalogo.autor",
+        "catalogo.editorial",
+        "catalogo.materia",
+        "catalogo.ejemplar",
+        "catalogo.constanciadonacion",
+        "catalogo.registrobibliografico",
+    ],
 }
 
 JAZZMIN_UI_TWEAKS = {

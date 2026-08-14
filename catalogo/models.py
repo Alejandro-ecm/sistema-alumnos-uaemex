@@ -56,6 +56,11 @@ class RegistroBibliografico(models.Model):
     )
     autores = models.ManyToManyField(Autor, through='AutorRegistro', related_name='registros')
     materias = models.ManyToManyField(Materia, related_name='registros', blank=True)
+    alumno = models.OneToOneField(
+        'alumnos.Alumno', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='registro_bibliografico',
+        help_text='Alumno que dio de alta este libro desde el cuestionario de registro (si aplica).',
+    )
 
     fecha_alta = models.DateTimeField(auto_now_add=True)
 

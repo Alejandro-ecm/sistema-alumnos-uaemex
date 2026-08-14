@@ -1,0 +1,79 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content_title %}<h1>MARC21</h1>{% endblock %}
+
+{% block content %}
+    <div class="col-12">
+        <div class="row mb-3">
+            <div class="col-12">
+                <a href="{% url 'admin:catalogo_marc21_generar_todos' %}" class="button default">
+                    Generar/actualizar MARC21 de todos los registros
+                </a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body" style="overflow-x:auto;">
+                <table class="marc21-tabla">
+                    <thead>
+                        <tr>
+                            <th>001</th>
+                            <th>020 (ISBN)</th>
+                            <th>100 (Autor principal)</th>
+                            <th>245 (Título)</th>
+                            <th>264 (Publicación)</th>
+                            <th>Alumno</th>
+                            <th>XML completo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for registro in registros %}
+                            <tr>
+                                <td>UAEMEX{{ registro.id|stringformat:"08d" }}</td>
+                                <td>{{ registro.isbn|default:"—" }}</td>
+                                <td>
+                                    {% for ar in registro.autorregistro_set.all %}
+                                        {% if ar.rol == 'PRINCIPAL' %}{{ ar.autor.nombre }}{% endif %}
+                                    {% empty %}—{% endfor %}
+                                </td>
+                                <td>
+                                    {{ registro.titulo }}{% if registro.subtitulo %} : {{ registro.subtitulo }}{% endif %}
+                                </td>
+                                <td>
+                                    {{ registro.lugar_publicacion|default:"[lugar no identificado]" }} :
+                                    {{ registro.editorial.nombre|default:"[editorial no identificada]" }},
+                                    {{ registro.anio_publicacion|default:"[fecha no identificada]" }}.
+                                </td>
+                                <td>{{ registro.alumno|default:"—" }}</td>
+                                <td>
+                                    {% if registro.marc_xml %}
+                                        <details>
+                                            <summary>Ver XML</summary>
+                                            <pre class="marc21-xml">{{ registro.marc_xml }}</pre>
+                                        </details>
+                                    {% else %}
+                                        Sin generar
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="7">Todavía no hay registros bibliográficos.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .marc21-tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .marc21-tabla th, .marc21-tabla td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
+        .marc21-tabla th { color: #1b5e20; font-weight: 800; white-space: nowrap; }
+        .marc21-xml {
+            max-width: 480px; max-height: 320px; overflow: auto; white-space: pre-wrap;
+            font-family: monospace; font-size: 11px; background: #f5f5f5; padding: 10px;
+            border-radius: 6px; margin-top: 6px;
+        }
+    </style>
+{% endblock %}

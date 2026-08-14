@@ -171,11 +171,6 @@ def generar_pdf2(request, alumno_id):
             _write_cell(row.cells[2], libro_edicion)
             _write_cell(row.cells[3], libro_editorial)
 
-    # Portada del libro (si se subió una foto), al final del documento
-    if alumno.libro_portada and os.path.exists(alumno.libro_portada.path):
-        doc.add_paragraph()
-        doc.add_picture(alumno.libro_portada.path, width=Inches(2.2))
-
     buffer = BytesIO()
     doc.save(buffer)
     buffer.seek(0)
