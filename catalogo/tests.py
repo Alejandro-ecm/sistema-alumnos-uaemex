@@ -3,7 +3,9 @@ import datetime
 import io
 
 import openpyxl
+import pymarc
 from django.contrib.auth.models import Group, Permission, User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -16,11 +18,12 @@ from .constancia_donacion import generar_constancia_donacion_docx
 from .excel_inventario import (
     TEMPLATE_HEADERS, exportar_inventario_xlsx, generar_plantilla_xlsx, importar_libros_xlsx,
 )
-from .marc import _campo_008, generar_marc_xml
+from .marc import _campo_008, generar_marc_binario, generar_marc_xml, poblar_registro_desde_marc
 from .models import (
     Autor, AutorRegistro, ConstanciaDonacion, ConstanciaDonacionLibro,
     Editorial, Ejemplar, Materia, RegistroBibliografico,
 )
+from .services import exportar_marc_coleccion, importar_marc
 
 
 def _xlsx_bytes(filas):
@@ -133,6 +136,264 @@ class MarcXmlTests(TestCase):
         self.assertEqual(len(campos_700), 1)
         self.assertEqual(campos_700[0]['a'], self.coautor.nombre)
         self.assertEqual(campos_700[0]['e'], 'autor')
+
+
+class MarcBinarioTests(TestCase):
+    def setUp(self):
+        self.autor = Autor.objects.create(nombre='García Márquez, Gabriel')
+        self.editorial = Editorial.objects.create(nombre='Sudamericana')
+        self.registro = RegistroBibliografico.objects.create(
+            titulo='Cien años de soledad',
+            isbn='978-0307474728',
+            edicion='1a ed.',
+            anio_publicacion=1967,
+            lugar_publicacion='Buenos Aires',
+            descripcion_fisica='471 p.',
+            clasificacion='863 G216c',
+            notas='Incluye índice.',
+            editorial=self.editorial,
+        )
+        AutorRegistro.objects.create(registro=self.registro, autor=self.autor, rol='PRINCIPAL')
+
+    def test_generar_marc_binario_produce_bytes_legibles_sin_advertencias(self):
+        binario = generar_marc_binario(self.registro)
+        self.assertIsInstance(binario, bytes)
+
+        import warnings
+        with warnings.catch_warnings(record=True) as capturadas:
+            warnings.simplefilter('always')
+            record = next(pymarc.MARCReader(io.BytesIO(binario)))
+        self.assertEqual(capturadas, [])
+        self.assertEqual(record['245']['a'], 'Cien años de soledad')
+        self.assertEqual(record['020']['a'], self.registro.isbn)
+
+    def test_registro_minimo_tambien_serializa_a_binario_sin_advertencias(self):
+        registro_minimo = RegistroBibliografico.objects.create(titulo='Título mínimo')
+        binario = generar_marc_binario(registro_minimo)
+
+        import warnings
+        with warnings.catch_warnings(record=True) as capturadas:
+            warnings.simplefilter('always')
+            record = next(pymarc.MARCReader(io.BytesIO(binario)))
+        self.assertEqual(capturadas, [])
+        self.assertEqual(record['245']['a'], 'Título mínimo')
+
+
+class PoblarRegistroDesdeMarcTests(TestCase):
+    def setUp(self):
+        self.autor = Autor.objects.create(nombre='García Márquez, Gabriel')
+        self.editorial = Editorial.objects.create(nombre='Sudamericana')
+        self.registro = RegistroBibliografico.objects.create(
+            titulo='Cien años de soledad',
+            isbn='978-0307474728',
+            edicion='1a ed.',
+            anio_publicacion=1967,
+            lugar_publicacion='Buenos Aires',
+            editorial=self.editorial,
+        )
+        AutorRegistro.objects.create(registro=self.registro, autor=self.autor, rol='PRINCIPAL')
+
+    def test_importar_registro_con_isbn_existente_actualiza_en_vez_de_duplicar(self):
+        xml = generar_marc_xml(self.registro)
+        record = parse_xml_to_array(io.BytesIO(xml.encode('utf-8')))[0]
+
+        registro, creado = poblar_registro_desde_marc(record)
+
+        self.assertFalse(creado)
+        self.assertEqual(registro.pk, self.registro.pk)
+        self.assertEqual(RegistroBibliografico.objects.filter(titulo=self.registro.titulo).count(), 1)
+
+    def test_importar_registro_sin_isbn_empareja_por_titulo(self):
+        registro_sin_isbn = RegistroBibliografico.objects.create(titulo='Ficciones')
+        xml = generar_marc_xml(registro_sin_isbn)
+        record = parse_xml_to_array(io.BytesIO(xml.encode('utf-8')))[0]
+
+        registro, creado = poblar_registro_desde_marc(record)
+
+        self.assertFalse(creado)
+        self.assertEqual(registro.pk, registro_sin_isbn.pk)
+
+    def test_importar_registro_nuevo_sin_coincidencias_crea_uno(self):
+        otro = RegistroBibliografico.objects.create(titulo='El otoño del patriarca', isbn='978-9999999999')
+        xml = generar_marc_xml(otro)
+        record = parse_xml_to_array(io.BytesIO(xml.encode('utf-8')))[0]
+        otro.delete()
+
+        registro, creado = poblar_registro_desde_marc(record)
+
+        self.assertTrue(creado)
+        self.assertEqual(registro.titulo, 'El otoño del patriarca')
+        self.assertEqual(registro.isbn, '978-9999999999')
+
+    def test_registro_sin_campo_245_lanza_error_controlado(self):
+        record = pymarc.Record()
+        record.add_field(pymarc.Field(
+            tag='020', indicators=pymarc.Indicators(' ', ' '),
+            subfields=[pymarc.Subfield(code='a', value='000')],
+        ))
+        with self.assertRaises(ValueError):
+            poblar_registro_desde_marc(record)
+
+    def test_registro_sin_campo_250_no_lanza_keyerror(self):
+        registro_sin_edicion = RegistroBibliografico.objects.create(titulo='Sin edición')
+        xml = generar_marc_xml(registro_sin_edicion)
+        record = parse_xml_to_array(io.BytesIO(xml.encode('utf-8')))[0]
+        self.assertEqual(record.get_fields('250'), [])
+
+        registro, creado = poblar_registro_desde_marc(record)
+        self.assertFalse(creado)
+        self.assertEqual(registro.pk, registro_sin_edicion.pk)
+
+
+class ExportarImportarMarcColeccionTests(TestCase):
+    def setUp(self):
+        self.autor = Autor.objects.create(nombre='García Márquez, Gabriel')
+        self.registro = RegistroBibliografico.objects.create(
+            titulo='Cien años de soledad', isbn='978-0307474728',
+        )
+        AutorRegistro.objects.create(registro=self.registro, autor=self.autor, rol='PRINCIPAL')
+
+    def test_exportar_coleccion_mrc_produce_binario_parseable(self):
+        contenido = exportar_marc_coleccion('mrc')
+        registros = list(pymarc.MARCReader(io.BytesIO(contenido)))
+        self.assertEqual(len(registros), 1)
+        self.assertEqual(registros[0]['245']['a'], 'Cien años de soledad')
+
+    def test_exportar_coleccion_xml_produce_marcxml_parseable(self):
+        contenido = exportar_marc_coleccion('xml')
+        registros = parse_xml_to_array(io.BytesIO(contenido))
+        self.assertEqual(len(registros), 1)
+        self.assertEqual(registros[0]['245']['a'], 'Cien años de soledad')
+
+    def test_importar_marc_xml_actualiza_registro_existente(self):
+        contenido = exportar_marc_coleccion('xml')
+        archivo = SimpleUploadedFile('coleccion.xml', contenido, content_type='text/xml')
+
+        resultado = importar_marc(archivo)
+
+        self.assertEqual(resultado['nuevos'], 0)
+        self.assertEqual(resultado['actualizados'], 1)
+        self.assertEqual(resultado['errores'], 0)
+
+    def test_importar_marc_mrc_actualiza_registro_existente(self):
+        contenido = exportar_marc_coleccion('mrc')
+        archivo = SimpleUploadedFile('coleccion.mrc', contenido, content_type='application/marc')
+
+        resultado = importar_marc(archivo)
+
+        self.assertEqual(resultado['nuevos'], 0)
+        self.assertEqual(resultado['actualizados'], 1)
+        self.assertEqual(resultado['errores'], 0)
+
+    def test_importar_marc_con_extension_no_soportada_devuelve_error_controlado(self):
+        archivo = SimpleUploadedFile('coleccion.txt', b'no es marc', content_type='text/plain')
+        resultado = importar_marc(archivo)
+        self.assertIn('error', resultado)
+
+    def test_importar_marc_con_archivo_xml_invalido_devuelve_error_controlado(self):
+        archivo = SimpleUploadedFile('roto.xml', b'<esto no es marcxml>', content_type='text/xml')
+        resultado = importar_marc(archivo)
+        self.assertIn('error', resultado)
+
+
+class Marc21AdminVistasAccesoTests(TestCase):
+    def setUp(self):
+        self.registro = RegistroBibliografico.objects.create(titulo='Ficciones', isbn='978-1111111111')
+
+    def _cliente_con_permiso_ver(self, username):
+        usuario = User.objects.create_user(username, f'{username}@example.com', 'x', is_staff=True)
+        usuario.user_permissions.add(Permission.objects.get(
+            content_type__app_label='catalogo', codename='view_registrobibliografico'
+        ))
+        client = Client()
+        client.force_login(usuario)
+        return client
+
+    def _cliente_con_permiso_agregar(self, username):
+        usuario = User.objects.create_user(username, f'{username}@example.com', 'x', is_staff=True)
+        usuario.user_permissions.add(Permission.objects.get(
+            content_type__app_label='catalogo', codename='add_registrobibliografico'
+        ))
+        client = Client()
+        client.force_login(usuario)
+        return client
+
+    def test_sin_permiso_no_puede_ver_tabla_marc21(self):
+        usuario = User.objects.create_user('sin_permiso_marc21', 'a@example.com', 'x', is_staff=True)
+        client = Client()
+        client.force_login(usuario)
+        response = client.get(reverse('admin:catalogo_marc21'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_con_permiso_puede_ver_tabla_marc21(self):
+        client = self._cliente_con_permiso_ver('con_permiso_marc21')
+        response = client.get(reverse('admin:catalogo_marc21'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Ficciones')
+
+    def test_descargar_registro_individual_en_xml(self):
+        client = self._cliente_con_permiso_ver('con_permiso_descargar_xml')
+        response = client.get(
+            reverse('admin:catalogo_marc21_descargar', args=[self.registro.id, 'xml'])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/marcxml+xml; charset=utf-8')
+
+    def test_descargar_registro_individual_en_mrc(self):
+        client = self._cliente_con_permiso_ver('con_permiso_descargar_mrc')
+        response = client.get(
+            reverse('admin:catalogo_marc21_descargar', args=[self.registro.id, 'mrc'])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/marc')
+
+    def test_exportar_todos_en_mrc(self):
+        client = self._cliente_con_permiso_ver('con_permiso_exportar_todos')
+        response = client.get(reverse('admin:catalogo_marc21_exportar_todos', args=['mrc']))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/marc')
+
+    def test_importar_sin_permiso_add_no_puede_acceder(self):
+        client = self._cliente_con_permiso_ver('sin_permiso_add_marc21')
+        response = client.get(reverse('admin:catalogo_marc21_importar'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_importar_con_permiso_add_puede_subir_archivo(self):
+        client = self._cliente_con_permiso_agregar('con_permiso_add_marc21')
+        contenido = exportar_marc_coleccion('xml')
+        archivo = SimpleUploadedFile('coleccion.xml', contenido, content_type='text/xml')
+
+        response = client.post(reverse('admin:catalogo_marc21_importar'), {'archivo': archivo})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Ficciones')
+
+
+class PanelBibliotecaAcervoDigitalTests(TestCase):
+    def setUp(self):
+        self.staff = User.objects.create_superuser('bibliotecario_acervo_test', 'acervo@example.com', 'x')
+        self.client = Client()
+        self.client.force_login(self.staff)
+
+        self.autor = Autor.objects.create(nombre='Rulfo, Juan')
+        self.alumno = Alumno.objects.create(
+            nombre='ALUMNO ACERVO TEST', numero_cuenta='9998894', carrera='MEDICO', facultad='MEDICINA',
+            libro_titulo='Pedro Páramo', libro_autor='Rulfo, Juan',
+        )
+        self.registro_desde_cuestionario = RegistroBibliografico.objects.get(alumno=self.alumno)
+        self.registro_manual = RegistroBibliografico.objects.create(titulo='Ficciones')
+
+    def test_panel_biblioteca_incluye_acervo_digital_en_el_contexto(self):
+        response = self.client.get(reverse('admin:catalogo_panel_biblioteca'))
+        self.assertEqual(response.status_code, 200)
+        acervo = list(response.context['acervo_digital'])
+        self.assertIn(self.registro_desde_cuestionario, acervo)
+        self.assertIn(self.registro_manual, acervo)
+
+    def test_panel_biblioteca_muestra_titulo_acervo_digital_uaemex(self):
+        response = self.client.get(reverse('admin:catalogo_panel_biblioteca'))
+        self.assertContains(response, 'Acervo Digital UAEMex')
+        self.assertContains(response, 'Pedro Páramo')
 
 
 class BusquedaAdminTests(TestCase):

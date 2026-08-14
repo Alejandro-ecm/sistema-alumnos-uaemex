@@ -1,9 +1,12 @@
 from dataclasses import dataclass
+from io import BytesIO
 
 from django.db.models import Count
 from django.utils import timezone
+from pymarc import MARCReader, MARCWriter, XMLWriter
+from pymarc.marcxml import parse_xml_to_array
 
-from .marc import generar_marc_xml
+from .marc import construir_registro_marc, generar_marc_xml, poblar_registro_desde_marc
 from .models import Autor, AutorRegistro, ConstanciaDonacion, Editorial, RegistroBibliografico
 
 
@@ -35,6 +38,61 @@ def sincronizar_registro_desde_alumno(alumno):
     registro.marc_xml = generar_marc_xml(registro)
     registro.save(update_fields=['marc_xml'])
     return registro
+
+
+def exportar_marc_coleccion(formato: str) -> bytes:
+    """Exporta TODOS los registros bibliográficos como un único archivo MARC21,
+    en el formato que Aleph/Voyager esperan para cargas por lote:
+    'mrc' = ISO 2709 binario, 'xml' = colección MARCXML.
+    """
+    buffer = BytesIO()
+    writer = MARCWriter(buffer) if formato == 'mrc' else XMLWriter(buffer)
+    for registro in RegistroBibliografico.objects.all():
+        writer.write(construir_registro_marc(registro))
+    writer.close(close_fh=False)
+    return buffer.getvalue()
+
+
+def importar_marc(archivo) -> dict:
+    """Importa registros bibliográficos desde un archivo MARC21 (.mrc ISO 2709
+    o .xml MARCXML) exportado de otro sistema bibliotecario, p. ej. Aleph o
+    Voyager.
+    """
+    nombre = archivo.name.lower()
+    contenido = archivo.read()
+
+    if nombre.endswith('.mrc') or nombre.endswith('.marc'):
+        try:
+            records = list(MARCReader(BytesIO(contenido), to_unicode=True, force_utf8=True))
+        except Exception as e:
+            return {'error': f'No se pudo leer el archivo MARC21 (.mrc): {e}'}
+    elif nombre.endswith('.xml'):
+        try:
+            records = parse_xml_to_array(BytesIO(contenido))
+        except Exception as e:
+            return {'error': f'No se pudo leer el archivo MARC21 (.xml): {e}'}
+    else:
+        return {'error': 'Formato no soportado. Sube un archivo .mrc o .xml (MARC21).'}
+
+    if not records:
+        return {'error': 'El archivo no contiene registros MARC21 válidos.'}
+
+    nuevos = actualizados = errores = 0
+    resultados = []
+    for n, record in enumerate(records, start=1):
+        try:
+            registro, creado = poblar_registro_desde_marc(record)
+            estado = 'nuevo' if creado else 'actualizado'
+            if creado:
+                nuevos += 1
+            else:
+                actualizados += 1
+            resultados.append({'fila': n, 'estado': estado, 'titulo': registro.titulo})
+        except Exception as e:
+            errores += 1
+            resultados.append({'fila': n, 'estado': 'error', 'titulo': '—', 'error': str(e)})
+
+    return {'nuevos': nuevos, 'actualizados': actualizados, 'errores': errores, 'resultados': resultados}
 
 
 def top_libros(limite: int = 5):

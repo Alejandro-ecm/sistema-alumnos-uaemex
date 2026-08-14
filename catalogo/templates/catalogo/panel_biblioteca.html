@@ -19,6 +19,7 @@
             <button type="button" class="pm-tab active" data-pm-tab="resumen">Resumen</button>
             <button type="button" class="pm-tab" data-pm-tab="actividad">Actividad y multas</button>
             <button type="button" class="pm-tab" data-pm-tab="importar">Importar/Exportar</button>
+            <button type="button" class="pm-tab" data-pm-tab="acervo">Biblioteca en línea</button>
         </div>
     </div>
 
@@ -344,6 +345,56 @@
         </div>
     </div>
 
+    <div class="pm-tab-panel" id="pm-panel-acervo">
+        <div class="col-12">
+            <div class="acervo-header">
+                <h2 class="acervo-title">📚 Acervo Digital UAEMex</h2>
+                <p class="acervo-subtitle">Catálogo en línea de la Biblioteca de Área: los libros que se suben
+                    desde el cuestionario de registro de los alumnos, junto con el resto del acervo.</p>
+                <input type="text" id="acervo-buscar" class="acervo-buscar"
+                       placeholder="Buscar por título, autor o editorial…">
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="acervo-grid" id="acervo-grid">
+                {% for registro in acervo_digital %}
+                    <a href="{% url 'admin:catalogo_registrobibliografico_change' registro.pk %}"
+                       class="acervo-card"
+                       data-buscar="{{ registro.titulo }} {% for ar in registro.autorregistro_set.all %}{{ ar.autor.nombre }} {% endfor %}{{ registro.editorial.nombre }}">
+                        <div class="acervo-portada">
+                            {% if registro.alumno.libro_portada %}
+                                <img src="{{ registro.alumno.libro_portada.url }}" alt="Portada de {{ registro.titulo }}">
+                            {% else %}
+                                <div class="acervo-portada-vacia"><i class="fas fa-book"></i></div>
+                            {% endif %}
+                        </div>
+                        <div class="acervo-datos">
+                            <div class="acervo-card-titulo">{{ registro.titulo }}</div>
+                            <div class="acervo-card-autor">
+                                {% for ar in registro.autorregistro_set.all %}
+                                    {% if ar.rol == 'PRINCIPAL' %}{{ ar.autor.nombre }}{% endif %}
+                                {% empty %}Autor no registrado{% endfor %}
+                            </div>
+                            <div class="acervo-card-meta">
+                                {{ registro.editorial.nombre|default:"Editorial no identificada" }}
+                                {% if registro.anio_publicacion %} · {{ registro.anio_publicacion }}{% endif %}
+                            </div>
+                            {% if registro.alumno %}
+                                <span class="pm-badge acervo-badge">📋 Cuestionario</span>
+                            {% endif %}
+                        </div>
+                    </a>
+                {% empty %}
+                    <p class="pm-vacio">Aún no hay libros en el acervo digital.</p>
+                {% endfor %}
+            </div>
+            <p class="pm-vacio acervo-sin-resultados" id="acervo-sin-resultados" style="display:none;">
+                No se encontraron libros con esa búsqueda.
+            </p>
+        </div>
+    </div>
+
     <style>
         .pm-banner {
             position: relative; width: 100%; height: 220px; border-radius: 12px;
@@ -424,6 +475,32 @@
         .pm-tabla th { color: #1b5e20; font-weight: 800; }
 
         #pm-panel-importar .button { margin: 0 8px 8px 0; }
+
+        .acervo-header { margin-bottom: 18px; }
+        .acervo-title { font-size: 24px; font-weight: 800; color: #1b5e20; margin: 0 0 4px; }
+        .acervo-subtitle { color: #4a4a4a; font-size: 13px; margin: 0 0 12px; }
+        .acervo-buscar {
+            width: 100%; max-width: 420px; padding: 9px 14px; border: 1px solid #ccc;
+            border-radius: 8px; font-size: 14px;
+        }
+        .acervo-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px; margin-bottom: 8px;
+        }
+        .acervo-card {
+            display: flex; flex-direction: column; background: #fff; border-radius: 10px;
+            overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.1); text-decoration: none;
+            border-left: 4px solid #1f9d5a; transition: transform .15s ease, box-shadow .15s ease;
+        }
+        .acervo-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,.16); }
+        .acervo-portada { width: 100%; height: 160px; background: #eafaf1; display: flex; align-items: center; justify-content: center; }
+        .acervo-portada img { width: 100%; height: 100%; object-fit: cover; }
+        .acervo-portada-vacia { color: #1f9d5a; font-size: 40px; }
+        .acervo-datos { padding: 10px 12px; }
+        .acervo-card-titulo { font-size: 14px; font-weight: 800; color: #1b5e20; line-height: 1.25; margin-bottom: 4px; }
+        .acervo-card-autor { font-size: 12px; color: #333; margin-bottom: 2px; }
+        .acervo-card-meta { font-size: 11px; color: #777; margin-bottom: 6px; }
+        .acervo-badge { display: inline-block; }
     </style>
 
     <script>
@@ -435,6 +512,23 @@
                 document.getElementById('pm-panel-' + tab.dataset.pmTab).classList.add('active');
             });
         });
+
+        (function () {
+            var buscador = document.getElementById('acervo-buscar');
+            if (!buscador) return;
+            var tarjetas = document.querySelectorAll('#acervo-grid .acervo-card');
+            var sinResultados = document.getElementById('acervo-sin-resultados');
+            buscador.addEventListener('input', function () {
+                var texto = buscador.value.trim().toLowerCase();
+                var visibles = 0;
+                tarjetas.forEach(function (tarjeta) {
+                    var coincide = tarjeta.dataset.buscar.toLowerCase().indexOf(texto) !== -1;
+                    tarjeta.style.display = coincide ? '' : 'none';
+                    if (coincide) visibles++;
+                });
+                sinResultados.style.display = (visibles === 0 && tarjetas.length > 0) ? 'block' : 'none';
+            });
+        })();
 
         document.querySelectorAll('.panel-stat-num[data-count]').forEach(function (el) {
             var meta = parseInt(el.dataset.count, 10) || 0;

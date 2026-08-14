@@ -1,8 +1,8 @@
 from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
-from django.http import HttpResponse
-from django.shortcuts import redirect
+from django.http import Http404, HttpResponse
+from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import path
 from django.utils import timezone
@@ -12,12 +12,13 @@ from proyecto.admin_utils import accion_exportar_csv
 
 from .constancia_donacion import generar_constancia_donacion_docx
 from .excel_inventario import exportar_inventario_xlsx, generar_plantilla_xlsx, importar_libros_xlsx
-from .forms import ImportarLibrosForm
-from .marc import generar_marc_xml
+from .forms import ImportarLibrosForm, ImportarMarcForm
+from .marc import generar_marc_binario, generar_marc_xml
 from .models import (
     Autor, AutorRegistro, ConstanciaDonacion, ConstanciaDonacionLibro,
     Editorial, Ejemplar, Materia, RegistroBibliografico,
 )
+from .services import exportar_marc_coleccion, importar_marc
 
 
 def _respuesta_xlsx(workbook, nombre_archivo):
@@ -84,6 +85,12 @@ class RegistroBibliograficoAdmin(admin.ModelAdmin):
                  name='catalogo_marc21'),
             path('marc21/generar-todos/', self.admin_site.admin_view(self.marc21_generar_todos),
                  name='catalogo_marc21_generar_todos'),
+            path('marc21/<int:registro_id>/descargar/<str:formato>/',
+                 self.admin_site.admin_view(self.marc21_descargar), name='catalogo_marc21_descargar'),
+            path('marc21/exportar-todos/<str:formato>/',
+                 self.admin_site.admin_view(self.marc21_exportar_todos), name='catalogo_marc21_exportar_todos'),
+            path('marc21/importar/', self.admin_site.admin_view(self.marc21_importar),
+                 name='catalogo_marc21_importar'),
             path('panel-biblioteca/', self.admin_site.admin_view(self.panel_biblioteca),
                  name='catalogo_panel_biblioteca'),
             path('panel-biblioteca/importar/', self.admin_site.admin_view(self.panel_biblioteca_importar),
@@ -121,6 +128,60 @@ class RegistroBibliograficoAdmin(admin.ModelAdmin):
         self.message_user(request, f'MARC21 generado para {actualizados} registro(s).')
         return redirect('admin:catalogo_marc21')
 
+    def marc21_descargar(self, request, registro_id, formato):
+        if not request.user.has_perm('catalogo.view_registrobibliografico'):
+            raise PermissionDenied
+        if formato not in ('xml', 'mrc'):
+            raise Http404
+        registro = get_object_or_404(RegistroBibliografico, pk=registro_id)
+        nombre_archivo = f'UAEMEX{registro.id:08d}.{formato}'
+        if formato == 'mrc':
+            response = HttpResponse(generar_marc_binario(registro), content_type='application/marc')
+        else:
+            response = HttpResponse(generar_marc_xml(registro), content_type='application/marcxml+xml; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+        return response
+
+    def marc21_exportar_todos(self, request, formato):
+        if not request.user.has_perm('catalogo.view_registrobibliografico'):
+            raise PermissionDenied
+        if formato not in ('xml', 'mrc'):
+            raise Http404
+        contenido = exportar_marc_coleccion(formato)
+        content_type = 'application/marc' if formato == 'mrc' else 'application/marcxml+xml; charset=utf-8'
+        response = HttpResponse(contenido, content_type=content_type)
+        response['Content-Disposition'] = f'attachment; filename="catalogo_uaemex.{formato}"'
+        return response
+
+    def marc21_importar(self, request):
+        if not request.user.has_perm('catalogo.add_registrobibliografico'):
+            raise PermissionDenied
+        resultado = None
+        if request.method == 'POST':
+            form = ImportarMarcForm(request.POST, request.FILES)
+            if form.is_valid():
+                resultado = importar_marc(form.cleaned_data['archivo'])
+                if resultado.get('error'):
+                    self.message_user(request, resultado['error'], level=messages.ERROR)
+                else:
+                    self.message_user(
+                        request,
+                        f"Importación MARC21 lista: {resultado['nuevos']} nuevo(s), "
+                        f"{resultado['actualizados']} actualizado(s)"
+                        + (f", {resultado['errores']} error(es)" if resultado['errores'] else ''),
+                    )
+                form = ImportarMarcForm()
+        else:
+            form = ImportarMarcForm()
+
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Importar registros MARC21',
+            'form': form,
+            'resultado': resultado,
+        }
+        return TemplateResponse(request, 'catalogo/importar_marc.html', context)
+
     def panel_biblioteca(self, request):
         if not request.user.has_perm('catalogo.view_registrobibliografico'):
             raise PermissionDenied
@@ -138,6 +199,9 @@ class RegistroBibliograficoAdmin(admin.ModelAdmin):
             'prestamos_vencidos': resumen.vencidos,
             'resumen_prestamos': resumen,
             'libros_recientes': RegistroBibliografico.objects.order_by('-fecha_alta')[:5],
+            'acervo_digital': RegistroBibliografico.objects.select_related('editorial', 'alumno')
+                .prefetch_related('autorregistro_set__autor', 'materias')
+                .order_by('-fecha_alta'),
             'constancias_recientes': ConstanciaDonacion.objects.select_related('generado_por')
                 .prefetch_related('libros__registro')[:5],
             'constancias_total': ConstanciaDonacion.objects.count(),

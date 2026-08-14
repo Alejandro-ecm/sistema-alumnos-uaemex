@@ -5,10 +5,28 @@
 
 {% block content %}
     <div class="col-12">
+        <div class="card mb-3 marc21-info-card">
+            <div class="card-body">
+                <p>MARC21 es el formato estándar que usan los sistemas bibliotecarios (como <strong>Aleph</strong>
+                    y <strong>Voyager</strong>) para intercambiar registros. Cada libro que se da de alta —incluyendo
+                    los que llegan del cuestionario de registro de los alumnos— genera aquí su registro MARC21
+                    automáticamente.</p>
+            </div>
+        </div>
+
         <div class="row mb-3">
             <div class="col-12">
                 <a href="{% url 'admin:catalogo_marc21_generar_todos' %}" class="button default">
-                    Generar/actualizar MARC21 de todos los registros
+                    <i class="fas fa-sync"></i> Generar/actualizar MARC21 de todos
+                </a>
+                <a href="{% url 'admin:catalogo_marc21_exportar_todos' formato='mrc' %}" class="button">
+                    <i class="fas fa-file-export"></i> Exportar todo (.mrc)
+                </a>
+                <a href="{% url 'admin:catalogo_marc21_exportar_todos' formato='xml' %}" class="button">
+                    <i class="fas fa-file-export"></i> Exportar todo (MARCXML)
+                </a>
+                <a href="{% url 'admin:catalogo_marc21_importar' %}" class="button">
+                    <i class="fas fa-file-import"></i> Importar desde Aleph/Voyager (.mrc / .xml)
                 </a>
             </div>
         </div>
@@ -55,6 +73,10 @@
                                     {% else %}
                                         Sin generar
                                     {% endif %}
+                                    <div class="marc21-descargas">
+                                        <a href="{% url 'admin:catalogo_marc21_descargar' registro.id 'xml' %}">⬇ .xml</a>
+                                        <a href="{% url 'admin:catalogo_marc21_descargar' registro.id 'mrc' %}">⬇ .mrc</a>
+                                    </div>
                                 </td>
                             </tr>
                         {% empty %}
@@ -67,6 +89,7 @@
     </div>
 
     <style>
+        .marc21-info-card { border-left: 6px solid #1f9d5a !important; }
         .marc21-tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
         .marc21-tabla th, .marc21-tabla td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
         .marc21-tabla th { color: #1b5e20; font-weight: 800; white-space: nowrap; }
@@ -75,5 +98,8 @@
             font-family: monospace; font-size: 11px; background: #f5f5f5; padding: 10px;
             border-radius: 6px; margin-top: 6px;
         }
+        .marc21-descargas { margin-top: 6px; display: flex; gap: 10px; }
+        .marc21-descargas a { font-size: 12px; font-weight: 700; color: #1b5e20; text-decoration: none; }
+        .marc21-descargas a:hover { text-decoration: underline; }
     </style>
 {% endblock %}
