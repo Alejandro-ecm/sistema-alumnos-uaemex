@@ -125,7 +125,7 @@ class UsuarioAdmin(DjangoUserAdmin):
 
 
 class AlumnoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'numero_cuenta', 'facultad', 'carrera', 'semestre', 'estado', 'estado_biblioteca', 'documentos_links', 'ver_pdfs', 'eliminar_btn')
+    list_display = ('nombre', 'numero_cuenta', 'facultad', 'carrera', 'semestre', 'estado', 'estado_biblioteca', 'documentos_links', 'ver_pdfs', 'enviar_correo_btn', 'eliminar_btn')
     search_fields = ('nombre', 'numero_cuenta', 'correo')
     list_editable = ('estado',)
     change_list_template = 'admin/alumnos/alumno/change_list.html'
@@ -177,21 +177,6 @@ class AlumnoAdmin(admin.ModelAdmin):
     estado_biblioteca.short_description = "Biblioteca"
 
     def ver_pdfs(self, obj):
-        if obj.correo:
-            enviar_url = reverse('admin:alumnos_alumno_enviar_correo', args=[obj.pk])
-            enviar_btn = (
-                f'  <a href="{enviar_url}" onclick="return confirm(\'¿Enviar las 3 constancias en PDF al correo {obj.correo}?\');" style="'
-                f'     display:block;padding:4px 8px;background:#0d6efd;color:#fff;'
-                f'     border-radius:4px;text-decoration:none;font-size:12px;text-align:center;">'
-                f'     ✉ Enviar correo</a>'
-            )
-        else:
-            enviar_btn = (
-                f'  <span title="El alumno no registró correo" style="'
-                f'     display:block;padding:4px 8px;background:#bdbdbd;color:#fff;'
-                f'     border-radius:4px;font-size:12px;text-align:center;">'
-                f'     ✉ Sin correo</span>'
-            )
         html = (
             f'<div style="display:flex;flex-direction:column;gap:4px;min-width:180px;">'
             f'  <a href="/pdf/{obj.id}/"   target="_blank" style="'
@@ -199,18 +184,33 @@ class AlumnoAdmin(admin.ModelAdmin):
             f'     border-radius:4px;text-decoration:none;font-size:12px;text-align:center;">'
             f'     🖨 Constancia No Adeudo</a>'
             f'  <a href="/pdf2/{obj.id}/"  target="_blank" style="'
-            f'     display:block;padding:4px 8px;background:#1565c0;color:#fff;'
+            f'     display:block;padding:4px 8px;background:#2e7d32;color:#fff;'
             f'     border-radius:4px;text-decoration:none;font-size:12px;text-align:center;">'
             f'     📋 Registro Material</a>'
             f'  <a href="/carta/{obj.id}/" target="_blank" style="'
-            f'     display:block;padding:4px 8px;background:#6a1b9a;color:#fff;'
+            f'     display:block;padding:4px 8px;background:#2e7d32;color:#fff;'
             f'     border-radius:4px;text-decoration:none;font-size:12px;text-align:center;">'
             f'     📄 Carta Autorización</a>'
-            f'{enviar_btn}'
             f'</div>'
         )
         return mark_safe(html)
-    ver_pdfs.short_description = "Imprimir (Word) / Enviar (PDF)"
+    ver_pdfs.short_description = "Editar constancias"
+
+    def enviar_correo_btn(self, obj):
+        enviar_url = reverse('admin:alumnos_alumno_enviar_correo', args=[obj.pk])
+        if obj.correo:
+            confirmacion = f'¿Enviar las 3 constancias en PDF al correo {obj.correo}?'
+        else:
+            confirmacion = 'Este alumno no tiene un correo registrado. ¿Intentar enviar de todos modos?'
+        html = (
+            f'<a href="{enviar_url}" onclick="return confirm(\'{confirmacion}\');" style="'
+            f'   display:block;padding:4px 8px;background:#0d6efd;color:#fff;'
+            f'   border-radius:4px;text-decoration:none;font-size:12px;text-align:center;'
+            f'   min-width:110px;">'
+            f'   ✉ Enviar correo</a>'
+        )
+        return mark_safe(html)
+    enviar_correo_btn.short_description = "Enviar correo"
 
     def eliminar_btn(self, obj):
         url = reverse('admin:alumnos_alumno_delete', args=[obj.pk])
