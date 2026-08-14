@@ -185,6 +185,7 @@ JAZZMIN_SETTINGS = {
         }],
     },
     "hide_models": [
+        "auth.user",
         "deteccion_libros.eventodeteccion",
         "catalogo.autor",
         "catalogo.editorial",
