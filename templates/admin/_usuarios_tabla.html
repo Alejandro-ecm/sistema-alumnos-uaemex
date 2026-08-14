@@ -1,0 +1,135 @@
+{% load i18n %}
+<div class="usr-card">
+    <div class="usr-card-header">
+        <div class="usr-card-title">
+            <i class="fas fa-users-cog"></i>
+            <span>Usuarios del sistema</span>
+        </div>
+        <a href="{{ add_url }}" class="usr-add-btn">
+            <i class="fas fa-plus"></i> Agregar usuario
+        </a>
+    </div>
+
+    <div class="usr-table-wrap">
+        <table class="usr-table">
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th>Último acceso</th>
+                    <th class="usr-col-acciones">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in usuarios %}
+                <tr>
+                    <td>
+                        <div class="usr-user-cell">
+                            <div class="usr-avatar">{{ u.obj.username|slice:":1"|upper }}</div>
+                            <div>
+                                <a href="{{ u.editar_url }}" class="usr-username">{{ u.obj.username }}</a>
+                                {% if u.obj.is_superuser %}<div class="usr-badge-super">Superusuario</div>{% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <select class="usr-select" onchange="fetch('{{ u.cambiar_rol_url }}',{method:'POST',headers:{'X-CSRFToken':document.cookie.match(/csrftoken=([^;]+)/)[1]},body:new URLSearchParams({rol:this.value})}).then(()=>location.reload());">
+                            <option value=""{% if not u.rol_actual %} selected{% endif %}>— sin rol —</option>
+                            {% for r in roles %}
+                            <option value="{{ r }}"{% if r == u.rol_actual %} selected{% endif %}>{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        {% if u.obj.is_active %}
+                        <span class="usr-status usr-status-activo">● Activo</span>
+                        {% else %}
+                        <span class="usr-status usr-status-inactivo">● Inactivo</span>
+                        {% endif %}
+                    </td>
+                    <td class="usr-last-login">
+                        {% if u.obj.last_login %}{{ u.obj.last_login|date:"d/m/Y H:i" }}{% else %}—{% endif %}
+                    </td>
+                    <td class="usr-col-acciones">
+                        <a href="{{ u.eliminar_url }}" class="usr-delete-btn">🗑 Eliminar</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="usr-empty">No hay usuarios registrados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .usr-card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,.08);
+        margin-top: 8px;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    .usr-card-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 1px solid #eee;
+        background: linear-gradient(90deg, #1f9d5a 0%, #17824a 100%);
+    }
+    .usr-card-title {
+        color: #fff; font-size: 16px; font-weight: 700;
+        display: flex; align-items: center; gap: 10px;
+    }
+    .usr-add-btn {
+        background: rgba(255,255,255,.18);
+        color: #fff; text-decoration: none;
+        padding: 7px 14px; border-radius: 6px;
+        font-size: 13px; font-weight: 600;
+        display: flex; align-items: center; gap: 6px;
+        transition: background .15s;
+    }
+    .usr-add-btn:hover { background: rgba(255,255,255,.32); color: #fff; }
+    .usr-table-wrap { overflow-x: auto; }
+    .usr-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .usr-table thead th {
+        text-align: left; padding: 10px 20px;
+        background: #f7f9f8; color: #5a6a63;
+        font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em;
+        border-bottom: 2px solid #eef1ef;
+    }
+    .usr-table tbody td {
+        padding: 12px 20px; border-bottom: 1px solid #f1f3f2; vertical-align: middle;
+    }
+    .usr-table tbody tr:hover { background: #f9fcfa; }
+    .usr-table tbody tr:last-child td { border-bottom: none; }
+    .usr-user-cell { display: flex; align-items: center; gap: 12px; }
+    .usr-avatar {
+        width: 34px; height: 34px; border-radius: 50%;
+        background: #1f9d5a; color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 14px; flex-shrink: 0;
+    }
+    .usr-username { color: #1b3a2c; font-weight: 700; text-decoration: none; }
+    .usr-username:hover { text-decoration: underline; color: #1f9d5a; }
+    .usr-badge-super {
+        font-size: 10.5px; color: #6a1b9a; font-weight: 700;
+        background: #f3e5f5; display: inline-block; padding: 1px 6px; border-radius: 4px; margin-top: 2px;
+    }
+    .usr-select {
+        padding: 5px 8px; border-radius: 6px; border: 1px solid #dbe2df;
+        font-size: 13px; background: #fff; min-width: 150px;
+    }
+    .usr-status { font-weight: 700; font-size: 12.5px; }
+    .usr-status-activo { color: #1f9d5a; }
+    .usr-status-inactivo { color: #b0b7b3; }
+    .usr-last-login { color: #6a7570; font-size: 12.5px; }
+    .usr-col-acciones { text-align: right; }
+    .usr-delete-btn {
+        display: inline-block; padding: 5px 10px; background: #c62828; color: #fff;
+        border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600;
+    }
+    .usr-delete-btn:hover { background: #a01f1f; color: #fff; }
+    .usr-empty { text-align: center; color: #9aa5a0; padding: 24px; }
+</style>

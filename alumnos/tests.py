@@ -32,8 +32,10 @@ def _crear_alumno(**overrides):
 
 
 def _datos_libro_validos():
-    """Campos requeridos del cuestionario de datos del libro (sección 4 de registro.html)."""
+    """Campos requeridos del cuestionario (correo institucional + datos del
+    libro, sección 4 de registro.html) para que un POST a `registro` sea válido."""
     return {
+        'correo': 'alumno.prueba@alumno.uaemex.mx',
         'libro_titulo': 'Anatomía Humana',
         'libro_autor': 'Latarjet',
         'libro_editorial': 'Panamericana',

@@ -1,12 +1,14 @@
 from django import forms
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 from django.contrib.auth.models import Group, User
+from django.core.mail import EmailMessage
 from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotAllowed
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import path, reverse
 from .models import Alumno, ImpresionConstancia
+from .pdf_docs import generar_carta_pdf, generar_constancia_pdf, generar_registro_material_pdf
 from django.utils.html import format_html, format_html_join, mark_safe
 
 admin.site.unregister(Group)
@@ -175,6 +177,21 @@ class AlumnoAdmin(admin.ModelAdmin):
     estado_biblioteca.short_description = "Biblioteca"
 
     def ver_pdfs(self, obj):
+        if obj.correo:
+            enviar_url = reverse('admin:alumnos_alumno_enviar_correo', args=[obj.pk])
+            enviar_btn = (
+                f'  <a href="{enviar_url}" onclick="return confirm(\'¿Enviar las 3 constancias en PDF al correo {obj.correo}?\');" style="'
+                f'     display:block;padding:4px 8px;background:#0d6efd;color:#fff;'
+                f'     border-radius:4px;text-decoration:none;font-size:12px;text-align:center;">'
+                f'     ✉ Enviar correo</a>'
+            )
+        else:
+            enviar_btn = (
+                f'  <span title="El alumno no registró correo" style="'
+                f'     display:block;padding:4px 8px;background:#bdbdbd;color:#fff;'
+                f'     border-radius:4px;font-size:12px;text-align:center;">'
+                f'     ✉ Sin correo</span>'
+            )
         html = (
             f'<div style="display:flex;flex-direction:column;gap:4px;min-width:180px;">'
             f'  <a href="/pdf/{obj.id}/"   target="_blank" style="'
@@ -189,10 +206,11 @@ class AlumnoAdmin(admin.ModelAdmin):
             f'     display:block;padding:4px 8px;background:#6a1b9a;color:#fff;'
             f'     border-radius:4px;text-decoration:none;font-size:12px;text-align:center;">'
             f'     📄 Carta Autorización</a>'
+            f'{enviar_btn}'
             f'</div>'
         )
         return mark_safe(html)
-    ver_pdfs.short_description = "Imprimir (Word)"
+    ver_pdfs.short_description = "Imprimir (Word) / Enviar (PDF)"
 
     def eliminar_btn(self, obj):
         url = reverse('admin:alumnos_alumno_delete', args=[obj.pk])
@@ -213,6 +231,54 @@ class AlumnoAdmin(admin.ModelAdmin):
         from circulacion.services import alumnos_con_adeudo_count
         extra_context['total_adeudos'] = alumnos_con_adeudo_count()
         return super().changelist_view(request, extra_context=extra_context)
+
+    def get_urls(self):
+        propias = [
+            path(
+                '<int:alumno_id>/enviar-correo/',
+                self.admin_site.admin_view(self.enviar_correo_view),
+                name='alumnos_alumno_enviar_correo',
+            ),
+        ]
+        return propias + super().get_urls()
+
+    def enviar_correo_view(self, request, alumno_id):
+        if not request.user.has_perm('alumnos.change_alumno'):
+            return HttpResponseForbidden()
+        alumno = get_object_or_404(Alumno, pk=alumno_id)
+
+        if not alumno.correo:
+            messages.error(request, f'{alumno.nombre} no tiene un correo registrado.')
+            return redirect('admin:alumnos_alumno_changelist')
+
+        try:
+            documentos = [
+                generar_constancia_pdf(alumno),
+                generar_registro_material_pdf(alumno),
+                generar_carta_pdf(alumno),
+            ]
+            correo = EmailMessage(
+                subject='Tus documentos de la Biblioteca — UAEMex',
+                body=(
+                    f'Hola {alumno.nombre},\n\n'
+                    'Adjuntamos tus 3 documentos (Constancia de No Adeudo, Registro de '
+                    'Material y Carta de Autorización) ya autorizados por la Biblioteca '
+                    'de Área, en formato PDF listos para imprimir.\n\n'
+                    'Saludos,\nBiblioteca de Área — Facultad de Medicina y Química, UAEMex'
+                ),
+                to=[alumno.correo],
+            )
+            for buffer, filename in documentos:
+                correo.attach(filename, buffer.read(), 'application/pdf')
+            correo.send(fail_silently=False)
+        except Exception as e:
+            messages.error(request, f'No se pudo enviar el correo a {alumno.correo}: {e}')
+        else:
+            for tipo in ('NO_ADEUDO', 'REGISTRO_MATERIAL', 'CARTA_AUTORIZACION'):
+                ImpresionConstancia.objects.create(alumno=alumno, tipo=tipo)
+            messages.success(request, f'Correo con los 3 documentos enviado a {alumno.correo}.')
+
+        return redirect('admin:alumnos_alumno_changelist')
 
 
 admin.site.register(Alumno, AlumnoAdmin)
