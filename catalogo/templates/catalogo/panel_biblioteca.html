@@ -281,13 +281,13 @@
                             <div class="pm-block-title">Historial reciente</div>
                             <table class="pm-tabla">
                                 <thead>
-                                    <tr><th>Título</th><th>Alumno</th><th>Multa</th></tr>
+                                    <tr><th>Folio</th><th>Alumno</th><th>Multa</th></tr>
                                 </thead>
                                 <tbody>
                                     {% for prestamo in multas_recientes %}
                                         <tr>
-                                            <td>{{ prestamo.ejemplar.registro.titulo }}</td>
-                                            <td>{{ prestamo.alumno|default:'—' }}</td>
+                                            <td>{{ prestamo.folio }}</td>
+                                            <td>{{ prestamo.alumno_nombre|default:'—' }}</td>
                                             <td>${{ prestamo.multa_total }}</td>
                                         </tr>
                                     {% empty %}

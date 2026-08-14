@@ -10,7 +10,7 @@ from django.utils import timezone
 from pymarc.marcxml import parse_xml_to_array
 
 from alumnos.models import Alumno
-from circulacion.models import Prestamo
+from circulacion.services import crear_prestamo
 
 from .constancia_donacion import generar_constancia_donacion_docx
 from .excel_inventario import (
@@ -190,7 +190,10 @@ class PanelBibliotecaTests(TestCase):
             nombre='ALUMNO PANEL TEST', numero_cuenta='9998893', carrera='MEDICO', facultad='MEDICINA'
         )
         ayer = timezone.now().date() - datetime.timedelta(days=1)
-        Prestamo.objects.create(ejemplar=self.ej_prestado, alumno=alumno, fecha_vencimiento=ayer)
+        crear_prestamo(
+            alumno_nombre=alumno.nombre, matricula=alumno.numero_cuenta,
+            fecha_devolucion=ayer, ejemplar_ids=[self.ej_prestado.pk],
+        )
 
     def test_panel_biblioteca_muestra_las_estadisticas_esperadas(self):
         response = self.client.get(reverse('admin:catalogo_panel_biblioteca'))

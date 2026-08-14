@@ -1,0 +1,272 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content_title %}<h1>Préstamos</h1>{% endblock %}
+
+{% block content %}
+    <div class="col-12">
+        <div class="pr-header">
+            <div class="pr-header-titulo">
+                <i class="fas fa-exchange-alt"></i>
+                <div>
+                    <h2>Préstamos</h2>
+                    <p>{{ total_prestamos }} préstamo{{ total_prestamos|pluralize }} registrado{{ total_prestamos|pluralize }}</p>
+                </div>
+            </div>
+            <button type="button" class="pr-btn pr-btn-primary" id="pr-abrir-modal">
+                <i class="fas fa-plus"></i> Nuevo préstamo
+            </button>
+        </div>
+
+        <form method="get" class="pr-filtros">
+            <div class="pr-buscador">
+                <i class="fas fa-search"></i>
+                <input type="text" name="q" value="{{ buscar }}" placeholder="Buscar por nombre, folio o matrícula...">
+            </div>
+            <select name="estado" class="pr-select" onchange="this.form.submit()">
+                <option value="">Todos los estados</option>
+                {% for valor, etiqueta in estados %}
+                    <option value="{{ valor }}" {% if valor == estado_filtro %}selected{% endif %}>{{ etiqueta }}</option>
+                {% endfor %}
+            </select>
+            <noscript><button type="submit" class="pr-btn">Filtrar</button></noscript>
+        </form>
+
+        <div class="pr-card">
+            <div class="pr-tabla-scroll">
+                <table class="pr-tabla">
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            <th>Alumno</th>
+                            <th>Fecha salida</th>
+                            <th>Devolución</th>
+                            <th>Libros</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prestamo in prestamos %}
+                            <tr>
+                                <td class="pr-folio">{{ prestamo.folio }}</td>
+                                <td>
+                                    <div class="pr-alumno-nombre">{{ prestamo.alumno_nombre }}</div>
+                                    {% if prestamo.matricula %}<div class="pr-alumno-sub">{{ prestamo.matricula }}</div>{% endif %}
+                                </td>
+                                <td>{{ prestamo.fecha_salida|date:"d/m/Y" }}</td>
+                                <td>{{ prestamo.fecha_devolucion|date:"d/m/Y" }}</td>
+                                <td>{{ prestamo.libros.count }}</td>
+                                <td>
+                                    {% if prestamo.estado == 'ACTIVO' %}
+                                        {% if prestamo.vencido %}
+                                            <span class="pr-badge pr-badge-vencido">vencido</span>
+                                        {% else %}
+                                            <span class="pr-badge pr-badge-activo">activo</span>
+                                        {% endif %}
+                                    {% elif prestamo.estado == 'DEVUELTO' %}
+                                        <span class="pr-badge pr-badge-devuelto">devuelto</span>
+                                    {% else %}
+                                        <span class="pr-badge pr-badge-perdido">perdido</span>
+                                    {% endif %}
+                                </td>
+                                <td class="pr-acciones">
+                                    <a href="{% url 'admin:circulacion_prestamo_detalle' prestamo.pk %}" title="Ver detalle"><i class="fas fa-eye"></i></a>
+                                    <a href="{% url 'admin:circulacion_prestamo_recibo' prestamo.pk %}" title="Descargar recibo"><i class="fas fa-download"></i></a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="7" class="pr-vacio">Todavía no hay préstamos registrados.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="pr-modal-fondo" id="pr-modal-fondo">
+        <div class="pr-modal">
+            <div class="pr-modal-header">
+                <h3>Registrar préstamo</h3>
+                <button type="button" id="pr-cerrar-modal" class="pr-cerrar">&times;</button>
+            </div>
+            <form method="post" action="{% url 'admin:circulacion_prestamo_crear' %}" class="pr-form">
+                {% csrf_token %}
+                <div class="pr-campo">
+                    <label>Nombre del alumno *</label>
+                    <input type="text" name="alumno_nombre" placeholder="Nombre completo" required>
+                </div>
+                <div class="pr-fila">
+                    <div class="pr-campo">
+                        <label>Matrícula</label>
+                        <input type="text" name="matricula" placeholder="Matrícula">
+                    </div>
+                    <div class="pr-campo">
+                        <label>Teléfono</label>
+                        <input type="text" name="telefono" placeholder="Teléfono">
+                    </div>
+                </div>
+                <div class="pr-campo">
+                    <label>Carrera</label>
+                    <input type="text" name="carrera" placeholder="Carrera o programa">
+                </div>
+                <div class="pr-fila">
+                    <div class="pr-campo">
+                        <label>Fecha de salida *</label>
+                        <input type="date" name="fecha_salida" value="{{ form.fecha_salida.value|date:'Y-m-d' }}" required>
+                    </div>
+                    <div class="pr-campo">
+                        <label>Fecha de devolución *</label>
+                        <input type="date" name="fecha_devolucion" value="{{ form.fecha_devolucion.value|date:'Y-m-d' }}" required>
+                    </div>
+                </div>
+                <div class="pr-campo">
+                    <label>Agregar libros</label>
+                    <div class="pr-buscador">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="pr-buscar-libro" placeholder="Buscar libro disponible..." autocomplete="off">
+                    </div>
+                    <div id="pr-resultados-libros" class="pr-resultados-libros"></div>
+                    <div id="pr-libros-elegidos" class="pr-libros-elegidos"></div>
+                    <input type="hidden" name="ejemplares" id="pr-ejemplares-input">
+                </div>
+                <div class="pr-campo">
+                    <label>Observaciones</label>
+                    <textarea name="observaciones" placeholder="Notas adicionales..." rows="2"></textarea>
+                </div>
+                <div class="pr-modal-acciones">
+                    <button type="submit" class="pr-btn pr-btn-primary pr-btn-ancho">Registrar préstamo y generar recibo</button>
+                    <button type="button" id="pr-cancelar-modal" class="pr-btn">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .pr-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+        .pr-header-titulo { display: flex; align-items: center; gap: 14px; }
+        .pr-header-titulo i { font-size: 20px; color: #1f9d5a; background: #e6f6ec; padding: 12px; border-radius: 10px; }
+        .pr-header-titulo h2 { margin: 0; font-size: 22px; font-weight: 700; }
+        .pr-header-titulo p { margin: 2px 0 0; color: #6b7280; font-size: 13px; }
+
+        .pr-btn { border: 1px solid #d1d5db; background: #fff; color: #111827; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
+        .pr-btn-primary { background: #1f9d5a; border-color: #1f9d5a; color: #fff; }
+        .pr-btn-primary:hover { background: #188148; }
+        .pr-btn-ancho { width: 100%; }
+
+        .pr-filtros { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .pr-buscador { flex: 1 1 320px; position: relative; }
+        .pr-buscador i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; }
+        .pr-buscador input { width: 100%; padding: 10px 12px 10px 34px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 14px; }
+        .pr-select { padding: 10px 12px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 14px; background: #fff; }
+
+        .pr-card { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; }
+        .pr-tabla-scroll { overflow-x: auto; }
+        .pr-tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .pr-tabla th { text-align: left; padding: 12px 16px; color: #6b7280; font-weight: 600; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
+        .pr-tabla td { padding: 14px 16px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+        .pr-tabla tbody tr:last-child td { border-bottom: none; }
+        .pr-folio { font-family: monospace; color: #374151; }
+        .pr-alumno-nombre { font-weight: 600; }
+        .pr-alumno-sub { color: #9ca3af; font-size: 12px; }
+        .pr-vacio { text-align: center; color: #9ca3af; padding: 30px; }
+
+        .pr-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .pr-badge-activo { background: #e0edff; color: #2563eb; }
+        .pr-badge-devuelto { background: #dcfce7; color: #16a34a; }
+        .pr-badge-perdido { background: #fee2e2; color: #dc2626; }
+        .pr-badge-vencido { background: #fef3c7; color: #b45309; }
+
+        .pr-acciones { white-space: nowrap; }
+        .pr-acciones a { color: #6b7280; margin-right: 14px; font-size: 15px; }
+        .pr-acciones a:hover { color: #1f9d5a; }
+
+        .pr-modal-fondo { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 1050; align-items: center; justify-content: center; padding: 20px; }
+        .pr-modal-fondo.pr-abierto { display: flex; }
+        .pr-modal { background: #fff; border-radius: 14px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; padding: 24px; }
+        .pr-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+        .pr-modal-header h3 { margin: 0; font-size: 20px; }
+        .pr-cerrar { background: none; border: none; font-size: 22px; cursor: pointer; color: #6b7280; line-height: 1; }
+        .pr-form .pr-campo { margin-bottom: 14px; }
+        .pr-form label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #374151; }
+        .pr-form input[type=text], .pr-form input[type=date], .pr-form textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 14px; box-sizing: border-box; }
+        .pr-fila { display: flex; gap: 12px; }
+        .pr-fila .pr-campo { flex: 1; }
+        .pr-resultados-libros { border: 1px solid #e5e7eb; border-radius: 8px; margin-top: 6px; max-height: 160px; overflow-y: auto; }
+        .pr-resultados-libros:empty { display: none; border: none; }
+        .pr-resultado-libro { padding: 8px 12px; cursor: pointer; font-size: 13px; }
+        .pr-resultado-libro:hover { background: #f3f4f6; }
+        .pr-resultado-libro small { color: #9ca3af; display: block; }
+        .pr-libros-elegidos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .pr-chip { background: #e6f6ec; color: #15803d; padding: 5px 10px; border-radius: 16px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+        .pr-chip button { background: none; border: none; color: #15803d; cursor: pointer; font-weight: bold; }
+        .pr-modal-acciones { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+    </style>
+
+    <script>
+        (function () {
+            var modal = document.getElementById('pr-modal-fondo');
+            document.getElementById('pr-abrir-modal').addEventListener('click', function () { modal.classList.add('pr-abierto'); });
+            document.getElementById('pr-cerrar-modal').addEventListener('click', function () { modal.classList.remove('pr-abierto'); });
+            document.getElementById('pr-cancelar-modal').addEventListener('click', function () { modal.classList.remove('pr-abierto'); });
+            modal.addEventListener('click', function (e) { if (e.target === modal) modal.classList.remove('pr-abierto'); });
+
+            var elegidos = {};
+            var inputBuscar = document.getElementById('pr-buscar-libro');
+            var resultadosBox = document.getElementById('pr-resultados-libros');
+            var elegidosBox = document.getElementById('pr-libros-elegidos');
+            var inputOculto = document.getElementById('pr-ejemplares-input');
+            var timer = null;
+
+            function actualizarOculto() {
+                inputOculto.value = Object.keys(elegidos).join(',');
+            }
+
+            function pintarElegidos() {
+                elegidosBox.innerHTML = '';
+                Object.keys(elegidos).forEach(function (id) {
+                    var libro = elegidos[id];
+                    var chip = document.createElement('span');
+                    chip.className = 'pr-chip';
+                    chip.innerHTML = '<span>' + libro.titulo + '</span>';
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.textContent = '×';
+                    btn.addEventListener('click', function () {
+                        delete elegidos[id];
+                        pintarElegidos();
+                        actualizarOculto();
+                    });
+                    chip.appendChild(btn);
+                    elegidosBox.appendChild(chip);
+                });
+            }
+
+            inputBuscar.addEventListener('input', function () {
+                var q = inputBuscar.value.trim();
+                clearTimeout(timer);
+                if (!q) { resultadosBox.innerHTML = ''; return; }
+                timer = setTimeout(function () {
+                    fetch('{% url "admin:circulacion_prestamo_buscar_libros" %}?q=' + encodeURIComponent(q))
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            resultadosBox.innerHTML = '';
+                            data.resultados.forEach(function (libro) {
+                                var fila = document.createElement('div');
+                                fila.className = 'pr-resultado-libro';
+                                fila.innerHTML = '<div>' + libro.titulo + '</div><small>' + libro.codigo_barras + '</small>';
+                                fila.addEventListener('click', function () {
+                                    elegidos[libro.id] = libro;
+                                    pintarElegidos();
+                                    actualizarOculto();
+                                    resultadosBox.innerHTML = '';
+                                    inputBuscar.value = '';
+                                });
+                                resultadosBox.appendChild(fila);
+                            });
+                        });
+                }, 250);
+            });
+        })();
+    </script>
+{% endblock %}

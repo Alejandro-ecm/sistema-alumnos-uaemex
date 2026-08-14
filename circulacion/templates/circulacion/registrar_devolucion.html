@@ -7,9 +7,15 @@
     <div class="col-12">
         <div class="card mb-3 devolucion-info-card">
             <div class="card-body">
-                <p><strong>Ejemplar:</strong> {{ prestamo.ejemplar }}</p>
-                <p><strong>Alumno:</strong> {{ prestamo.alumno|default:"—" }}</p>
-                <p><strong>Fecha de vencimiento:</strong> {{ prestamo.fecha_vencimiento }}</p>
+                <p><strong>Folio:</strong> {{ prestamo.folio }}</p>
+                <p><strong>Alumno:</strong> {{ prestamo.alumno_nombre|default:"—" }}</p>
+                <p><strong>Libros:</strong></p>
+                <ul>
+                    {% for item in prestamo.libros.all %}
+                        <li>{{ item.ejemplar.registro.titulo }} ({{ item.ejemplar.codigo_barras }})</li>
+                    {% endfor %}
+                </ul>
+                <p><strong>Fecha de devolución:</strong> {{ prestamo.fecha_devolucion }}</p>
                 <p><strong>Días de atraso:</strong> {{ dias_retraso }}</p>
                 <p><strong>Multa estimada:</strong> ${{ multa_estimada }} MXN</p>
             </div>

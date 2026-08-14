@@ -1,0 +1,113 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content_title %}<h1>Préstamo {{ prestamo.folio }}</h1>{% endblock %}
+
+{% block content %}
+    <div class="col-12">
+        <a href="{% url 'admin:circulacion_prestamo_changelist' %}" class="pd-volver">&larr; Volver a préstamos</a>
+
+        <div class="pd-card">
+            <div class="pd-cabecera">
+                <div>
+                    <div class="pd-folio">{{ prestamo.folio }}</div>
+                    <div class="pd-alumno">{{ prestamo.alumno_nombre }}</div>
+                </div>
+                {% if prestamo.estado == 'ACTIVO' %}
+                    {% if prestamo.vencido %}
+                        <span class="pr-badge pr-badge-vencido">vencido</span>
+                    {% else %}
+                        <span class="pr-badge pr-badge-activo">activo</span>
+                    {% endif %}
+                {% elif prestamo.estado == 'DEVUELTO' %}
+                    <span class="pr-badge pr-badge-devuelto">devuelto</span>
+                {% else %}
+                    <span class="pr-badge pr-badge-perdido">perdido</span>
+                {% endif %}
+            </div>
+
+            <div class="pd-datos">
+                <div><span>Matrícula</span><strong>{{ prestamo.matricula|default:"—" }}</strong></div>
+                <div><span>Teléfono</span><strong>{{ prestamo.telefono|default:"—" }}</strong></div>
+                <div><span>Carrera</span><strong>{{ prestamo.carrera|default:"—" }}</strong></div>
+                <div><span>Fecha de salida</span><strong>{{ prestamo.fecha_salida|date:"d/m/Y" }}</strong></div>
+                <div><span>Fecha de devolución</span><strong>{{ prestamo.fecha_devolucion|date:"d/m/Y" }}</strong></div>
+                {% if prestamo.fecha_devolucion_real %}
+                    <div><span>Devuelto el</span><strong>{{ prestamo.fecha_devolucion_real|date:"d/m/Y H:i" }}</strong></div>
+                {% endif %}
+            </div>
+
+            <h3 class="pd-subtitulo">Libros prestados</h3>
+            <table class="pr-tabla">
+                <thead>
+                    <tr><th>Título</th><th>Código de barras</th></tr>
+                </thead>
+                <tbody>
+                    {% for item in prestamo.libros.all %}
+                        <tr>
+                            <td>{{ item.ejemplar.registro.titulo }}</td>
+                            <td>{{ item.ejemplar.codigo_barras }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if prestamo.observaciones %}
+                <h3 class="pd-subtitulo">Observaciones</h3>
+                <p>{{ prestamo.observaciones }}</p>
+            {% endif %}
+
+            {% if prestamo.estado == 'DEVUELTO' %}
+                <h3 class="pd-subtitulo">Multa</h3>
+                <div class="pd-datos">
+                    <div><span>Días de atraso</span><strong>{{ prestamo.dias_retraso }}</strong></div>
+                    <div><span>Multa calculada</span><strong>${{ prestamo.multa_total }} MXN</strong></div>
+                    <div><span>Multa cobrada</span><strong>${{ prestamo.multa_cobrada }} MXN</strong></div>
+                    <div><span>Pagada</span><strong>{{ prestamo.multa_pagada|yesno:"Sí,No" }}</strong></div>
+                </div>
+            {% endif %}
+
+            <div class="pd-acciones">
+                <a href="{% url 'admin:circulacion_prestamo_recibo' prestamo.pk %}" class="pr-btn">
+                    <i class="fas fa-download"></i> Descargar recibo
+                </a>
+                {% if prestamo.estado == 'ACTIVO' %}
+                    <a href="{% url 'admin:circulacion_prestamo_devolver' prestamo.pk %}" class="pr-btn pr-btn-primary">
+                        Registrar devolución
+                    </a>
+                    <form method="post" action="{% url 'admin:circulacion_prestamo_perdido' prestamo.pk %}"
+                          onsubmit="return confirm('¿Marcar este préstamo como perdido?');" class="pd-form-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="pr-btn pr-btn-peligro">Marcar como perdido</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .pd-volver { display: inline-block; margin-bottom: 14px; color: #6b7280; text-decoration: none; font-size: 14px; }
+        .pd-volver:hover { color: #1f9d5a; }
+        .pd-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; }
+        .pd-cabecera { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+        .pd-folio { font-family: monospace; color: #6b7280; font-size: 13px; }
+        .pd-alumno { font-size: 20px; font-weight: 700; }
+        .pd-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 10px; }
+        .pd-datos span { display: block; color: #9ca3af; font-size: 12px; }
+        .pd-datos strong { font-size: 14px; }
+        .pd-subtitulo { margin-top: 22px; margin-bottom: 10px; font-size: 15px; }
+        .pd-acciones { margin-top: 22px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .pd-form-inline { display: inline; }
+        .pr-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .pr-badge-activo { background: #e0edff; color: #2563eb; }
+        .pr-badge-devuelto { background: #dcfce7; color: #16a34a; }
+        .pr-badge-perdido { background: #fee2e2; color: #dc2626; }
+        .pr-badge-vencido { background: #fef3c7; color: #b45309; }
+        .pr-btn { border: 1px solid #d1d5db; background: #fff; color: #111827; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+        .pr-btn-primary { background: #1f9d5a; border-color: #1f9d5a; color: #fff; }
+        .pr-btn-peligro { background: #fee2e2; border-color: #fee2e2; color: #dc2626; }
+        .pr-tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .pr-tabla th { text-align: left; padding: 10px 12px; color: #6b7280; font-weight: 600; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; }
+        .pr-tabla td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; }
+    </style>
+{% endblock %}

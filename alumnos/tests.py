@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from catalogo.models import Ejemplar, RegistroBibliografico
-from circulacion.models import Prestamo
+from circulacion.services import crear_prestamo
 
 from .models import Alumno, ImpresionConstancia
 
@@ -291,7 +291,10 @@ class EstadoBibliotecaAdminTests(TestCase):
         registro = RegistroBibliografico.objects.create(titulo='Libro de prueba admin')
         ejemplar = Ejemplar.objects.create(registro=registro, codigo_barras='EJ-ADMIN-0001')
         ayer = timezone.now().date() - datetime.timedelta(days=1)
-        Prestamo.objects.create(ejemplar=ejemplar, alumno=alumno, fecha_vencimiento=ayer)
+        crear_prestamo(
+            alumno_nombre=alumno.nombre, matricula=alumno.numero_cuenta,
+            fecha_devolucion=ayer, ejemplar_ids=[ejemplar.pk],
+        )
 
         response = self.client.get(reverse('admin:alumnos_alumno_changelist'))
         self.assertContains(response, 'vencido')
@@ -301,7 +304,10 @@ class EstadoBibliotecaAdminTests(TestCase):
         registro = RegistroBibliografico.objects.create(titulo='Libro de prueba conteo')
         ejemplar = Ejemplar.objects.create(registro=registro, codigo_barras='EJ-ADMIN-0002')
         ayer = timezone.now().date() - datetime.timedelta(days=1)
-        Prestamo.objects.create(ejemplar=ejemplar, alumno=alumno, fecha_vencimiento=ayer)
+        crear_prestamo(
+            alumno_nombre=alumno.nombre, matricula=alumno.numero_cuenta,
+            fecha_devolucion=ayer, ejemplar_ids=[ejemplar.pk],
+        )
 
         response = self.client.get(reverse('admin:alumnos_alumno_changelist'))
         self.assertEqual(response.context['total_adeudos'], 1)

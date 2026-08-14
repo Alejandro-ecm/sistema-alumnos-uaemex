@@ -39,7 +39,7 @@ def sincronizar_registro_desde_alumno(alumno):
 
 def top_libros(limite: int = 5):
     return (
-        RegistroBibliografico.objects.annotate(veces_prestado=Count('ejemplares__prestamos'))
+        RegistroBibliografico.objects.annotate(veces_prestado=Count('ejemplares__prestamos_folio'))
         .filter(veces_prestado__gt=0)
         .order_by('-veces_prestado')[:limite]
     )
