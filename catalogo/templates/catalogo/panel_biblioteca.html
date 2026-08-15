@@ -360,7 +360,7 @@
             <div class="acervo-grid" id="acervo-grid">
                 {% for registro in acervo_digital %}
                     <a href="{% url 'admin:catalogo_registrobibliografico_change' registro.pk %}"
-                       class="acervo-card"
+                       class="acervo-card" style="--acervo-i: {{ forloop.counter0 }};"
                        data-buscar="{{ registro.titulo }} {% for ar in registro.autorregistro_set.all %}{{ ar.autor.nombre }} {% endfor %}{{ registro.editorial.nombre }}">
                         <div class="acervo-portada">
                             {% if registro.alumno.libro_portada %}
@@ -372,6 +372,7 @@
                         <div class="acervo-datos">
                             <div class="acervo-card-titulo">{{ registro.titulo }}</div>
                             <div class="acervo-card-autor">
+                                <i class="fas fa-feather-alt"></i>
                                 {% for ar in registro.autorregistro_set.all %}
                                     {% if ar.rol == 'PRINCIPAL' %}{{ ar.autor.nombre }}{% endif %}
                                 {% empty %}Autor no registrado{% endfor %}
@@ -380,6 +381,9 @@
                                 {{ registro.editorial.nombre|default:"Editorial no identificada" }}
                                 {% if registro.anio_publicacion %} · {{ registro.anio_publicacion }}{% endif %}
                             </div>
+                            {% if registro.edicion %}
+                                <div class="acervo-card-edicion"><i class="fas fa-layer-group"></i> Edición: {{ registro.edicion }}</div>
+                            {% endif %}
                             {% if registro.alumno %}
                                 <span class="pm-badge acervo-badge">📋 Cuestionario</span>
                             {% endif %}
@@ -476,34 +480,85 @@
 
         #pm-panel-importar .button { margin: 0 8px 8px 0; }
 
-        .acervo-header { margin-bottom: 18px; }
-        .acervo-title { font-size: 24px; font-weight: 800; color: #1b5e20; margin: 0 0 4px; }
-        .acervo-subtitle { color: #4a4a4a; font-size: 13px; margin: 0 0 12px; }
-        .acervo-buscar {
-            width: 100%; max-width: 420px; padding: 9px 14px; border: 1px solid #ccc;
-            border-radius: 8px; font-size: 14px;
+        .acervo-header {
+            margin-bottom: 18px; padding: 18px 22px; border-radius: 14px; position: relative; overflow: hidden;
+            background: linear-gradient(120deg, #0b2e1a 0%, #1f9d5a 55%, #12b886 100%);
+            background-size: 200% 200%; animation: acervoGradiente 8s ease infinite;
+            box-shadow: 0 8px 22px rgba(11,46,26,.25);
         }
+        @keyframes acervoGradiente {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .acervo-title {
+            font-size: 26px; font-weight: 800; color: #fff; margin: 0 0 4px;
+            text-shadow: 0 2px 8px rgba(0,0,0,.2);
+        }
+        .acervo-subtitle { color: #e2fbef; font-size: 13px; margin: 0 0 12px; max-width: 640px; }
+        .acervo-buscar {
+            width: 100%; max-width: 420px; padding: 10px 16px; border: none;
+            border-radius: 999px; font-size: 14px; box-shadow: 0 3px 10px rgba(0,0,0,.15);
+            transition: box-shadow .2s ease, transform .2s ease;
+        }
+        .acervo-buscar:focus { outline: none; box-shadow: 0 0 0 3px rgba(255,255,255,.55); transform: scale(1.01); }
         .acervo-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 16px; margin-bottom: 8px;
+            gap: 18px; margin-bottom: 8px;
         }
         .acervo-card {
-            display: flex; flex-direction: column; background: #fff; border-radius: 10px;
+            display: flex; flex-direction: column; background: #fff; border-radius: 12px;
             overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.1); text-decoration: none;
-            border-left: 4px solid #1f9d5a; transition: transform .15s ease, box-shadow .15s ease;
+            border-left: 4px solid #1f9d5a; position: relative;
+            transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease, border-color .25s ease;
+            opacity: 0; transform: translateY(16px);
+            animation: acervoAparece .5s ease forwards;
+            animation-delay: min(calc(var(--acervo-i, 0) * 0.05s), 0.6s);
         }
-        .acervo-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,.16); }
-        .acervo-portada { width: 100%; height: 160px; background: #eafaf1; display: flex; align-items: center; justify-content: center; }
-        .acervo-portada img { width: 100%; height: 100%; object-fit: cover; }
-        .acervo-portada-vacia { color: #1f9d5a; font-size: 40px; }
+        @keyframes acervoAparece {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .acervo-card:hover {
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 12px 26px rgba(31,157,90,.28);
+            border-left-color: #12b886;
+        }
+        .acervo-portada {
+            width: 100%; height: 160px; background: linear-gradient(160deg, #eafaf1, #d3f3e1);
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+        .acervo-portada img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
+        .acervo-card:hover .acervo-portada img { transform: scale(1.08); }
+        .acervo-portada-vacia { color: #1f9d5a; font-size: 40px; transition: transform .3s ease; }
+        .acervo-card:hover .acervo-portada-vacia { transform: rotate(-8deg) scale(1.1); }
         .acervo-datos { padding: 10px 12px; }
         .acervo-card-titulo { font-size: 14px; font-weight: 800; color: #1b5e20; line-height: 1.25; margin-bottom: 4px; }
         .acervo-card-autor { font-size: 12px; color: #333; margin-bottom: 2px; }
-        .acervo-card-meta { font-size: 11px; color: #777; margin-bottom: 6px; }
-        .acervo-badge { display: inline-block; }
+        .acervo-card-autor i { color: #1f9d5a; margin-right: 4px; }
+        .acervo-card-meta { font-size: 11px; color: #777; margin-bottom: 4px; }
+        .acervo-card-edicion { font-size: 11px; color: #1b5e20; font-weight: 600; margin-bottom: 6px; }
+        .acervo-card-edicion i { color: #1f9d5a; margin-right: 4px; }
+        .acervo-badge { display: inline-block; animation: acervoLatido 2.4s ease-in-out infinite; }
+        @keyframes acervoLatido {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.06); }
+        }
     </style>
 
     <script>
+        (function () {
+            var params = new URLSearchParams(window.location.search);
+            var tabInicial = params.get('tab');
+            if (!tabInicial) return;
+            var boton = document.querySelector('.pm-tab[data-pm-tab="' + tabInicial + '"]');
+            var panel = document.getElementById('pm-panel-' + tabInicial);
+            if (!boton || !panel) return;
+            document.querySelectorAll('.pm-tab').forEach(function (t) { t.classList.remove('active'); });
+            document.querySelectorAll('.pm-tab-panel').forEach(function (p) { p.classList.remove('active'); });
+            boton.classList.add('active');
+            panel.classList.add('active');
+        })();
+
         document.querySelectorAll('.pm-tab').forEach(function (tab) {
             tab.addEventListener('click', function () {
                 document.querySelectorAll('.pm-tab').forEach(function (t) { t.classList.remove('active'); });

@@ -16,16 +16,16 @@
 
         <div class="row mb-3">
             <div class="col-12">
-                <a href="{% url 'admin:catalogo_marc21_generar_todos' %}" class="button default">
+                <a href="{% url 'admin:catalogo_marc21_generar_todos' %}" class="button marc21-boton">
                     <i class="fas fa-sync"></i> Generar/actualizar MARC21 de todos
                 </a>
-                <a href="{% url 'admin:catalogo_marc21_exportar_todos' formato='mrc' %}" class="button">
+                <a href="{% url 'admin:catalogo_marc21_exportar_todos' formato='mrc' %}" class="button marc21-boton">
                     <i class="fas fa-file-export"></i> Exportar todo (.mrc)
                 </a>
-                <a href="{% url 'admin:catalogo_marc21_exportar_todos' formato='xml' %}" class="button">
+                <a href="{% url 'admin:catalogo_marc21_exportar_todos' formato='xml' %}" class="button marc21-boton">
                     <i class="fas fa-file-export"></i> Exportar todo (MARCXML)
                 </a>
-                <a href="{% url 'admin:catalogo_marc21_importar' %}" class="button">
+                <a href="{% url 'admin:catalogo_marc21_importar' %}" class="button marc21-boton">
                     <i class="fas fa-file-import"></i> Importar desde Aleph/Voyager (.mrc / .xml)
                 </a>
             </div>
@@ -101,5 +101,27 @@
         .marc21-descargas { margin-top: 6px; display: flex; gap: 10px; }
         .marc21-descargas a { font-size: 12px; font-weight: 700; color: #1b5e20; text-decoration: none; }
         .marc21-descargas a:hover { text-decoration: underline; }
+
+        .marc21-boton {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: #6f4e37 !important; color: #fff !important; border: none !important;
+            padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 13px;
+            margin: 0 8px 8px 0; box-shadow: 0 3px 10px rgba(111,78,55,.35);
+            transition: transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s ease, background .18s ease;
+        }
+        .marc21-boton i { font-size: 14px; }
+        .marc21-boton:hover {
+            background: #86634a !important; color: #fff !important;
+            transform: translateY(-4px); box-shadow: 0 8px 18px rgba(111,78,55,.45);
+            animation: marc21Salto .5s ease;
+        }
+        .marc21-boton:active { transform: translateY(-1px) scale(.97); }
+        @keyframes marc21Salto {
+            0% { transform: translateY(0); }
+            30% { transform: translateY(-9px); }
+            55% { transform: translateY(-2px); }
+            75% { transform: translateY(-5px); }
+            100% { transform: translateY(-4px); }
+        }
     </style>
 {% endblock %}
