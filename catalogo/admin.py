@@ -21,6 +21,52 @@ from .models import (
 from .services import exportar_marc_coleccion, importar_marc
 
 
+PALETA_CATEGORIAS = [
+    {'bg': '#dbeafe', 'fg': '#1d4ed8'},
+    {'bg': '#ede9fe', 'fg': '#7c3aed'},
+    {'bg': '#fce7f3', 'fg': '#db2777'},
+    {'bg': '#ffedd5', 'fg': '#c2410c'},
+    {'bg': '#fef9c3', 'fg': '#a16207'},
+    {'bg': '#ccfbf1', 'fg': '#0f766e'},
+    {'bg': '#ecfccb', 'fg': '#4d7c0f'},
+    {'bg': '#fee2e2', 'fg': '#b91c1c'},
+]
+
+
+def _acervo_categorizado():
+    """Agrupa el acervo digital por materia (con color por categoría) para la
+    vista tipo catálogo de 'Biblioteca en línea', más un grupo aparte para los
+    libros que todavía no tienen materia asignada."""
+    disponibles_filtro = Q(ejemplares__estado='DISPONIBLE')
+    materias_con_conteo = Materia.objects.annotate(
+        total=Count('registros', distinct=True)
+    ).filter(total__gt=0).order_by('-total', 'nombre')
+
+    categorias = []
+    for i, materia in enumerate(materias_con_conteo):
+        color = PALETA_CATEGORIAS[i % len(PALETA_CATEGORIAS)]
+        registros = (
+            RegistroBibliografico.objects.filter(materias=materia)
+            .select_related('editorial', 'alumno')
+            .prefetch_related('autorregistro_set__autor')
+            .annotate(disponibles=Count('ejemplares', filter=disponibles_filtro, distinct=True))
+            .order_by('-fecha_alta')
+        )
+        categorias.append({
+            'id': materia.id, 'nombre': materia.nombre, 'total': materia.total,
+            'bg': color['bg'], 'fg': color['fg'], 'registros': registros,
+        })
+
+    sin_categoria = (
+        RegistroBibliografico.objects.filter(materias__isnull=True)
+        .select_related('editorial', 'alumno')
+        .prefetch_related('autorregistro_set__autor')
+        .annotate(disponibles=Count('ejemplares', filter=disponibles_filtro, distinct=True))
+        .order_by('-fecha_alta')
+    )
+    return categorias, sin_categoria, materias_con_conteo.count()
+
+
 def _respuesta_xlsx(workbook, nombre_archivo):
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -190,6 +236,7 @@ class RegistroBibliograficoAdmin(admin.ModelAdmin):
         from .services import actividad_mensual, top_libros
         resumen = resumen_prestamos()
         multas = resumen_multas()
+        acervo_categorias, acervo_sin_categoria, acervo_areas = _acervo_categorizado()
         context = {
             **self.admin_site.each_context(request),
             'title': 'Panel Biblioteca',
@@ -202,6 +249,10 @@ class RegistroBibliograficoAdmin(admin.ModelAdmin):
             'acervo_digital': RegistroBibliografico.objects.select_related('editorial', 'alumno')
                 .prefetch_related('autorregistro_set__autor', 'materias')
                 .order_by('-fecha_alta'),
+            'acervo_total': RegistroBibliografico.objects.count(),
+            'acervo_areas': acervo_areas,
+            'acervo_categorias': acervo_categorias,
+            'acervo_sin_categoria': acervo_sin_categoria,
             'constancias_recientes': ConstanciaDonacion.objects.select_related('generado_por')
                 .prefetch_related('libros__registro')[:5],
             'constancias_total': ConstanciaDonacion.objects.count(),

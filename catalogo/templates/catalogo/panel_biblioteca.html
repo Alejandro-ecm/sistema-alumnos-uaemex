@@ -3,6 +3,10 @@
 
 {% block content_title %}{% endblock %}
 
+{% block extrastyle %}
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
     <div class="col-12">
         <div class="pm-banner">
@@ -347,55 +351,129 @@
 
     <div class="pm-tab-panel" id="pm-panel-acervo">
         <div class="col-12">
-            <div class="acervo-header">
-                <h2 class="acervo-title">📚 Acervo Digital UAEMex</h2>
-                <p class="acervo-subtitle">Catálogo en línea de la Biblioteca de Área: los libros que se suben
-                    desde el cuestionario de registro de los alumnos, junto con el resto del acervo.</p>
-                <input type="text" id="acervo-buscar" class="acervo-buscar"
-                       placeholder="Buscar por título, autor o editorial…">
+            <div class="acervo-hero" style="background-image: url('{% static 'img/fondo_acervo.jpg' %}');">
+                <div class="acervo-hero-overlay">
+                    <div class="acervo-hero-brand">
+                        <img src="{% static 'img/logo.JPG' %}" alt="UAEMex">
+                        <div>
+                            <div class="acervo-hero-brand-title">Acervo Digital UAEMex</div>
+                            <div class="acervo-hero-brand-sub">Área de Química y Medicina</div>
+                        </div>
+                    </div>
+
+                    <div class="acervo-hero-crest">
+                        <img src="{% static 'img/logo.JPG' %}" alt="Escudo UAEMex">
+                        <div>
+                            <div class="acervo-hero-uni">Universidad Autónoma del Estado de México</div>
+                            <div class="acervo-hero-lema">Patria · Ciencia · Trabajo</div>
+                        </div>
+                    </div>
+
+                    <h2 class="acervo-hero-title">Acervo <span>Digital</span></h2>
+                    <p class="acervo-hero-subtitle">Biblioteca · Área de Medicina y Química — UAEMex</p>
+
+                    <div class="acervo-hero-buscar-wrap">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="acervo-buscar" class="acervo-buscar"
+                               placeholder="Buscar por título, autor, editorial o categoría…">
+                    </div>
+
+                    <div class="acervo-hero-links">
+                        <a href="{% url 'admin:catalogo_panel_biblioteca_exportar' %}?tipo=todos" class="acervo-pill-link">
+                            <i class="fas fa-book"></i> Inventario digital
+                        </a>
+                        <a href="{% url 'admin:circulacion_prestamo_changelist' %}" class="acervo-pill-link">
+                            <i class="fas fa-exchange-alt"></i> Préstamos
+                        </a>
+                        <a href="{% url 'admin:catalogo_constanciadonacion_changelist' %}" class="acervo-pill-link">
+                            <i class="fas fa-file-alt"></i> Constancias
+                        </a>
+                        <a href="{% url 'admin:alumnos_alumno_changelist' %}" class="acervo-pill-link">
+                            <i class="fas fa-graduation-cap"></i> Comunidad UAEMex
+                        </a>
+                    </div>
+                </div>
+
+                <div class="acervo-hero-stats">
+                    <div class="acervo-stat">
+                        <i class="fas fa-book-open"></i>
+                        <div>
+                            <div class="acervo-stat-num panel-stat-num" data-count="{{ acervo_total }}">0</div>
+                            <div class="acervo-stat-label">Títulos en catálogo</div>
+                        </div>
+                    </div>
+                    <div class="acervo-stat">
+                        <i class="fas fa-bookmark"></i>
+                        <div>
+                            <div class="acervo-stat-num panel-stat-num" data-count="{{ ejemplares_disponibles }}">0</div>
+                            <div class="acervo-stat-label">Disponibles ahora</div>
+                        </div>
+                    </div>
+                    <div class="acervo-stat">
+                        <i class="fas fa-graduation-cap"></i>
+                        <div>
+                            <div class="acervo-stat-num panel-stat-num" data-count="{{ acervo_areas }}">0</div>
+                            <div class="acervo-stat-label">Áreas temáticas</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <div class="col-12">
-            <div class="acervo-grid" id="acervo-grid">
-                {% for registro in acervo_digital %}
-                    <a href="{% url 'admin:catalogo_registrobibliografico_change' registro.pk %}"
-                       class="acervo-card" style="--acervo-i: {{ forloop.counter0 }};"
-                       data-buscar="{{ registro.titulo }} {% for ar in registro.autorregistro_set.all %}{{ ar.autor.nombre }} {% endfor %}{{ registro.editorial.nombre }}">
-                        <div class="acervo-portada">
-                            {% if registro.alumno.libro_portada %}
-                                <img src="{{ registro.alumno.libro_portada.url }}" alt="Portada de {{ registro.titulo }}">
-                            {% else %}
-                                <div class="acervo-portada-vacia"><i class="fas fa-book"></i></div>
-                            {% endif %}
+            <div class="acervo-explora">
+                <div class="acervo-explora-label">ACERVO BIBLIOGRÁFICO</div>
+                <h2 class="acervo-explora-title">Explora el Catálogo</h2>
+                <div class="acervo-explora-linea"></div>
+
+                <div class="acervo-filtros">
+                    <button type="button" class="acervo-filtro-pill activo" data-categoria="todos">Todos ({{ acervo_total }})</button>
+                    {% for cat in acervo_categorias %}
+                        <button type="button" class="acervo-filtro-pill" data-categoria="cat-{{ cat.id }}"
+                                style="--pill-bg: {{ cat.bg }}; --pill-fg: {{ cat.fg }};">{{ cat.nombre }} ({{ cat.total }})</button>
+                    {% endfor %}
+                    {% if acervo_sin_categoria %}
+                        <button type="button" class="acervo-filtro-pill" data-categoria="sin-categoria">Sin categoría ({{ acervo_sin_categoria|length }})</button>
+                    {% endif %}
+                </div>
+
+                {% for cat in acervo_categorias %}
+                    <div class="acervo-categoria-section" data-categoria-section="cat-{{ cat.id }}">
+                        <div class="acervo-categoria-header">
+                            <span class="acervo-categoria-barra" style="background: {{ cat.fg }};"></span>
+                            <span class="acervo-categoria-nombre">{{ cat.nombre }}</span>
+                            <span class="acervo-categoria-badge" style="background: {{ cat.bg }}; color: {{ cat.fg }};">{{ cat.total }} título{{ cat.total|pluralize }}</span>
                         </div>
-                        <div class="acervo-datos">
-                            <div class="acervo-card-titulo">{{ registro.titulo }}</div>
-                            <div class="acervo-card-autor">
-                                <i class="fas fa-feather-alt"></i>
-                                {% for ar in registro.autorregistro_set.all %}
-                                    {% if ar.rol == 'PRINCIPAL' %}{{ ar.autor.nombre }}{% endif %}
-                                {% empty %}Autor no registrado{% endfor %}
-                            </div>
-                            <div class="acervo-card-meta">
-                                {{ registro.editorial.nombre|default:"Editorial no identificada" }}
-                                {% if registro.anio_publicacion %} · {{ registro.anio_publicacion }}{% endif %}
-                            </div>
-                            {% if registro.edicion %}
-                                <div class="acervo-card-edicion"><i class="fas fa-layer-group"></i> Edición: {{ registro.edicion }}</div>
-                            {% endif %}
-                            {% if registro.alumno %}
-                                <span class="pm-badge acervo-badge">📋 Cuestionario</span>
-                            {% endif %}
+                        <div class="acervo-grid">
+                            {% for registro in cat.registros %}
+                                {% include "catalogo/_acervo_card.html" %}
+                            {% endfor %}
                         </div>
-                    </a>
-                {% empty %}
-                    <p class="pm-vacio">Aún no hay libros en el acervo digital.</p>
+                    </div>
                 {% endfor %}
+
+                {% if acervo_sin_categoria %}
+                    <div class="acervo-categoria-section" data-categoria-section="sin-categoria">
+                        <div class="acervo-categoria-header">
+                            <span class="acervo-categoria-barra" style="background: #6b7280;"></span>
+                            <span class="acervo-categoria-nombre">Sin categoría</span>
+                            <span class="acervo-categoria-badge" style="background: #e5e7eb; color: #374151;">{{ acervo_sin_categoria|length }} título{{ acervo_sin_categoria|length|pluralize }}</span>
+                        </div>
+                        <div class="acervo-grid">
+                            {% for registro in acervo_sin_categoria %}
+                                {% include "catalogo/_acervo_card.html" %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if not acervo_digital %}
+                    <p class="pm-vacio">Aún no hay libros en el acervo digital.</p>
+                {% endif %}
+                <p class="pm-vacio acervo-sin-resultados" id="acervo-sin-resultados" style="display:none;">
+                    No se encontraron libros con esa búsqueda.
+                </p>
             </div>
-            <p class="pm-vacio acervo-sin-resultados" id="acervo-sin-resultados" style="display:none;">
-                No se encontraron libros con esa búsqueda.
-            </p>
         </div>
     </div>
 
@@ -480,28 +558,93 @@
 
         #pm-panel-importar .button { margin: 0 8px 8px 0; }
 
-        .acervo-header {
-            margin-bottom: 18px; padding: 18px 22px; border-radius: 14px; position: relative; overflow: hidden;
-            background: linear-gradient(120deg, #0b2e1a 0%, #1f9d5a 55%, #12b886 100%);
-            background-size: 200% 200%; animation: acervoGradiente 8s ease infinite;
-            box-shadow: 0 8px 22px rgba(11,46,26,.25);
+        .acervo-hero {
+            position: relative; margin-bottom: 0; border-radius: 14px 14px 0 0; overflow: hidden;
+            background-size: cover; background-position: center; box-shadow: 0 8px 22px rgba(11,46,26,.25);
         }
-        @keyframes acervoGradiente {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        .acervo-hero-overlay {
+            position: relative; padding: 26px 30px 34px;
+            background: linear-gradient(180deg, rgba(6,26,15,.78) 0%, rgba(6,26,15,.55) 45%, rgba(6,26,15,.88) 100%);
         }
-        .acervo-title {
-            font-size: 26px; font-weight: 800; color: #fff; margin: 0 0 4px;
-            text-shadow: 0 2px 8px rgba(0,0,0,.2);
+        .acervo-hero-brand {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
         }
-        .acervo-subtitle { color: #e2fbef; font-size: 13px; margin: 0 0 12px; max-width: 640px; }
+        .acervo-hero-brand img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,.7); }
+        .acervo-hero-brand-title { color: #fff; font-weight: 800; font-size: 13px; }
+        .acervo-hero-brand-sub { color: #d8f3e4; font-size: 11px; }
+        .acervo-hero-crest { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+        .acervo-hero-crest img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; }
+        .acervo-hero-uni { color: #fff; font-size: 12px; font-weight: 700; }
+        .acervo-hero-lema { color: #c9a34d; font-size: 11px; letter-spacing: .5px; }
+        .acervo-hero-title {
+            font-family: 'Playfair Display', Georgia, serif; font-weight: 800;
+            font-size: 42px; color: #fff; margin: 0 0 8px; text-shadow: 0 3px 14px rgba(0,0,0,.45);
+        }
+        .acervo-hero-title span { color: #d9b25c; }
+        .acervo-hero-subtitle { color: #eafaf1; font-size: 14px; margin: 0 0 20px; max-width: 640px; }
+        .acervo-hero-buscar-wrap {
+            position: relative; max-width: 460px; margin-bottom: 16px;
+        }
+        .acervo-hero-buscar-wrap i {
+            position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #1f9d5a;
+        }
         .acervo-buscar {
-            width: 100%; max-width: 420px; padding: 10px 16px; border: none;
-            border-radius: 999px; font-size: 14px; box-shadow: 0 3px 10px rgba(0,0,0,.15);
+            width: 100%; padding: 12px 16px 12px 42px; border: none;
+            border-radius: 999px; font-size: 14px; box-shadow: 0 3px 12px rgba(0,0,0,.25);
             transition: box-shadow .2s ease, transform .2s ease;
         }
         .acervo-buscar:focus { outline: none; box-shadow: 0 0 0 3px rgba(255,255,255,.55); transform: scale(1.01); }
+        .acervo-hero-links { display: flex; flex-wrap: wrap; gap: 10px; }
+        .acervo-pill-link {
+            display: inline-flex; align-items: center; gap: 6px; color: #fff; text-decoration: none;
+            font-size: 12px; font-weight: 700; padding: 8px 14px; border-radius: 999px;
+            background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.3);
+            transition: background .2s ease, transform .2s ease;
+        }
+        .acervo-pill-link:hover { background: rgba(255,255,255,.28); transform: translateY(-2px); color: #fff; }
+        .acervo-hero-stats {
+            display: flex; flex-wrap: wrap; gap: 0; background: #0b2e1a; border-radius: 0 0 14px 14px;
+        }
+        .acervo-stat {
+            flex: 1 1 160px; display: flex; align-items: center; gap: 12px; padding: 16px 22px;
+            border-right: 1px solid rgba(255,255,255,.1);
+        }
+        .acervo-stat:last-child { border-right: none; }
+        .acervo-stat i { color: #d9b25c; font-size: 20px; }
+        .acervo-stat-num { font-size: 24px; font-weight: 800; color: #fff; line-height: 1.1; }
+        .acervo-stat-label { color: #cfeede; font-size: 11px; }
+
+        .acervo-explora { margin-top: 26px; }
+        .acervo-explora-label {
+            color: #1f9d5a; font-weight: 800; font-size: 12px; letter-spacing: 1.5px; margin-bottom: 6px;
+        }
+        .acervo-explora-title {
+            font-family: 'Playfair Display', Georgia, serif; font-weight: 800; font-size: 28px;
+            color: #1b5e20; margin: 0 0 10px;
+        }
+        .acervo-explora-linea {
+            width: 70px; height: 4px; border-radius: 3px; margin-bottom: 20px;
+            background: linear-gradient(90deg, #1f9d5a, #d9b25c);
+        }
+        .acervo-filtros { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 26px; }
+        .acervo-filtro-pill {
+            --pill-bg: #eafaf1; --pill-fg: #1b5e20;
+            border: none; cursor: pointer; padding: 8px 16px; border-radius: 999px;
+            font-size: 12px; font-weight: 700; background: var(--pill-bg); color: var(--pill-fg);
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+        .acervo-filtro-pill:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,.12); }
+        .acervo-filtro-pill.activo { box-shadow: 0 0 0 2px var(--pill-fg) inset; }
+        .acervo-categoria-section { margin-bottom: 30px; }
+        .acervo-categoria-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+        .acervo-categoria-barra { width: 6px; height: 22px; border-radius: 3px; display: inline-block; }
+        .acervo-categoria-nombre { font-size: 16px; font-weight: 800; color: #1b5e20; }
+        .acervo-categoria-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+        .acervo-disp-badge {
+            position: absolute; top: 8px; right: 8px; background: rgba(11,46,26,.85); color: #fff;
+            font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
+        }
+        .acervo-portada { position: relative; }
         .acervo-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 18px; margin-bottom: 8px;
@@ -570,19 +713,41 @@
 
         (function () {
             var buscador = document.getElementById('acervo-buscar');
-            if (!buscador) return;
-            var tarjetas = document.querySelectorAll('#acervo-grid .acervo-card');
+            var secciones = document.querySelectorAll('[data-categoria-section]');
+            if (!secciones.length) return;
             var sinResultados = document.getElementById('acervo-sin-resultados');
-            buscador.addEventListener('input', function () {
-                var texto = buscador.value.trim().toLowerCase();
-                var visibles = 0;
-                tarjetas.forEach(function (tarjeta) {
-                    var coincide = tarjeta.dataset.buscar.toLowerCase().indexOf(texto) !== -1;
-                    tarjeta.style.display = coincide ? '' : 'none';
-                    if (coincide) visibles++;
+            var pills = document.querySelectorAll('.acervo-filtro-pill');
+            var categoriaActiva = 'todos';
+
+            function aplicarFiltros() {
+                var texto = buscador ? buscador.value.trim().toLowerCase() : '';
+                var totalVisibles = 0;
+                secciones.forEach(function (seccion) {
+                    var cat = seccion.dataset.categoriaSection;
+                    var mostrarSeccion = (categoriaActiva === 'todos' || categoriaActiva === cat);
+                    var visiblesSeccion = 0;
+                    seccion.querySelectorAll('.acervo-card').forEach(function (tarjeta) {
+                        var coincideTexto = !texto || tarjeta.dataset.buscar.toLowerCase().indexOf(texto) !== -1;
+                        var visible = mostrarSeccion && coincideTexto;
+                        tarjeta.style.display = visible ? '' : 'none';
+                        if (visible) visiblesSeccion++;
+                    });
+                    seccion.style.display = visiblesSeccion > 0 ? '' : 'none';
+                    totalVisibles += visiblesSeccion;
                 });
-                sinResultados.style.display = (visibles === 0 && tarjetas.length > 0) ? 'block' : 'none';
+                if (sinResultados) sinResultados.style.display = totalVisibles === 0 ? 'block' : 'none';
+            }
+
+            pills.forEach(function (pill) {
+                pill.addEventListener('click', function () {
+                    pills.forEach(function (p) { p.classList.remove('activo'); });
+                    pill.classList.add('activo');
+                    categoriaActiva = pill.dataset.categoria;
+                    aplicarFiltros();
+                });
             });
+
+            if (buscador) buscador.addEventListener('input', aplicarFiltros);
         })();
 
         document.querySelectorAll('.panel-stat-num[data-count]').forEach(function (el) {
