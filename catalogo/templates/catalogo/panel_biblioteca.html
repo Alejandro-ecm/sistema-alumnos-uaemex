@@ -356,7 +356,7 @@
                     <div class="acervo-hero-brand">
                         <img src="{% static 'img/logo.JPG' %}" alt="UAEMex">
                         <div>
-                            <div class="acervo-hero-brand-title">Acervo Digital UAEMex</div>
+                            <div class="acervo-hero-brand-title">Biblioteca UAEMex</div>
                             <div class="acervo-hero-brand-sub">Área de Química y Medicina</div>
                         </div>
                     </div>
@@ -369,8 +369,8 @@
                         </div>
                     </div>
 
-                    <h2 class="acervo-hero-title">Acervo <span>Digital</span></h2>
-                    <p class="acervo-hero-subtitle">Biblioteca · Área de Medicina y Química — UAEMex</p>
+                    <h2 class="acervo-hero-title">Catálogo <span>Digital</span></h2>
+                    <p class="acervo-hero-subtitle">Biblioteca · Química y Medicina</p>
 
                     <div class="acervo-hero-buscar-wrap">
                         <i class="fas fa-search"></i>
@@ -391,6 +391,11 @@
                         <a href="{% url 'admin:alumnos_alumno_changelist' %}" class="acervo-pill-link">
                             <i class="fas fa-graduation-cap"></i> Comunidad UAEMex
                         </a>
+                    </div>
+
+                    <div class="acervo-hero-explorar">
+                        <span>EXPLORAR</span>
+                        <div class="acervo-hero-explorar-linea"></div>
                     </div>
                 </div>
 
@@ -563,19 +568,23 @@
             background-size: cover; background-position: center; box-shadow: 0 8px 22px rgba(11,46,26,.25);
         }
         .acervo-hero-overlay {
-            position: relative; padding: 26px 30px 34px;
-            background: linear-gradient(180deg, rgba(6,26,15,.78) 0%, rgba(6,26,15,.55) 45%, rgba(6,26,15,.88) 100%);
+            position: relative; padding: 22px 30px 56px; min-height: 460px;
+            display: flex; flex-direction: column;
+            background: linear-gradient(180deg, rgba(6,26,15,.78) 0%, rgba(6,26,15,.45) 45%, rgba(6,26,15,.88) 100%);
         }
         .acervo-hero-brand {
-            display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+            display: flex; align-items: center; gap: 10px; margin-bottom: 40px;
         }
-        .acervo-hero-brand img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,.7); }
+        .acervo-hero-brand img { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; background: #fff; padding: 2px; }
         .acervo-hero-brand-title { color: #fff; font-weight: 800; font-size: 13px; }
         .acervo-hero-brand-sub { color: #d8f3e4; font-size: 11px; }
-        .acervo-hero-crest { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-        .acervo-hero-crest img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; }
-        .acervo-hero-uni { color: #fff; font-size: 12px; font-weight: 700; }
-        .acervo-hero-lema { color: #c9a34d; font-size: 11px; letter-spacing: .5px; }
+        .acervo-hero-crest { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+        .acervo-hero-crest img { width: 52px; height: 52px; object-fit: cover; border-radius: 8px; background: #fff; padding: 3px; }
+        .acervo-hero-uni {
+            color: #eafaf1; font-size: 12px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+            padding-bottom: 6px; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,.35);
+        }
+        .acervo-hero-lema { color: #d9b25c; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
         .acervo-hero-title {
             font-family: 'Playfair Display', Georgia, serif; font-weight: 800;
             font-size: 42px; color: #fff; margin: 0 0 8px; text-shadow: 0 3px 14px rgba(0,0,0,.45);
@@ -595,6 +604,14 @@
         }
         .acervo-buscar:focus { outline: none; box-shadow: 0 0 0 3px rgba(255,255,255,.55); transform: scale(1.01); }
         .acervo-hero-links { display: flex; flex-wrap: wrap; gap: 10px; }
+        .acervo-hero-explorar {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            margin: auto auto 0; padding-top: 30px;
+        }
+        .acervo-hero-explorar span {
+            color: #eafaf1; font-size: 11px; font-weight: 700; letter-spacing: 2px;
+        }
+        .acervo-hero-explorar-linea { width: 1px; height: 26px; background: rgba(255,255,255,.5); }
         .acervo-pill-link {
             display: inline-flex; align-items: center; gap: 6px; color: #fff; text-decoration: none;
             font-size: 12px; font-weight: 700; padding: 8px 14px; border-radius: 999px;

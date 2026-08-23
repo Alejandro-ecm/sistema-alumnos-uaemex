@@ -182,8 +182,7 @@ JAZZMIN_SETTINGS = {
             "url": "admin:catalogo_marc21",
             "icon": "fas fa-book",
             "permissions": ["catalogo.view_registrobibliografico"],
-        }],
-        "circulacion": [{
+        }, {
             "name": "Acervo Digital",
             "url": "/admin/catalogo/registrobibliografico/panel-biblioteca/?tab=acervo",
             "icon": "fas fa-book-reader",

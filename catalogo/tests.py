@@ -390,9 +390,9 @@ class PanelBibliotecaAcervoDigitalTests(TestCase):
         self.assertIn(self.registro_desde_cuestionario, acervo)
         self.assertIn(self.registro_manual, acervo)
 
-    def test_panel_biblioteca_muestra_titulo_acervo_digital_uaemex(self):
+    def test_panel_biblioteca_muestra_titulo_catalogo_digital(self):
         response = self.client.get(reverse('admin:catalogo_panel_biblioteca'))
-        self.assertContains(response, 'Acervo Digital UAEMex')
+        self.assertContains(response, 'Biblioteca UAEMex')
         self.assertContains(response, 'Pedro Páramo')
 
 

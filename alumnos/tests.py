@@ -136,10 +136,13 @@ class PermisosTests(TestCase):
         response = self.client.get(reverse('admin:catalogo_panel_biblioteca'))
         self.assertEqual(response.status_code, 200)
 
-    def test_administrativo_no_accede_al_panel_biblioteca(self):
+    def test_administrativo_accede_al_acervo_digital(self):
+        # Administrativos y Mantenimiento tienen catalogo.view_registrobibliografico
+        # (solo lectura) para que el Acervo/Catálogo Digital esté disponible en
+        # los 3 roles de acceso, no solo para Bibliotecario.
         self.client.login(username='admvo1', password='clave-segura-123')
         response = self.client.get(reverse('admin:catalogo_panel_biblioteca'))
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
 
 
 # ──────────────────────────────────────────────────────────────
