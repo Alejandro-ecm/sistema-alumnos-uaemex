@@ -507,8 +507,6 @@ def panel_redirect(request):
         return admin.site.index(request)
     if user.groups.filter(name='Administrativos').exists():
         return redirect('admin:alumnos_alumno_changelist')
-    if user.groups.filter(name='Mantenimiento').exists():
-        return redirect('admin:deteccion_libros_panel_mantenimiento')
     if user.groups.filter(name='Bibliotecario').exists():
         return redirect('admin:catalogo_panel_biblioteca')
     return admin.site.index(request)

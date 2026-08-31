@@ -101,7 +101,7 @@ class VistaSeguridadAccessTests(TestCase):
         self.mant = User.objects.create_user(
             username='mant_deteccion', password='clave-segura-123', is_staff=True
         )
-        self.mant.groups.add(Group.objects.get(name='Mantenimiento'))
+        self.mant.groups.add(Group.objects.get(name='Superusuario'))
         self.sin_permiso = User.objects.create_user(
             username='staff_sin_deteccion', password='clave-segura-123', is_staff=True
         )
@@ -134,7 +134,7 @@ class GuardarCamaraTests(TestCase):
         self.mant = User.objects.create_user(
             username='mant_guardar_camara', password='clave-segura-123', is_staff=True
         )
-        self.mant.groups.add(Group.objects.get(name='Mantenimiento'))
+        self.mant.groups.add(Group.objects.get(name='Superusuario'))
         self.client.login(username='mant_guardar_camara', password='clave-segura-123')
 
     def test_falta_nombre_o_source_devuelve_400_y_no_persiste(self):

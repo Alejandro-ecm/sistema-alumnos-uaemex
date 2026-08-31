@@ -1,0 +1,29 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content_title %}<h1>Enviar correo</h1>{% endblock %}
+
+{% block content %}
+    <div class="col-12">
+        <div class="card mb-3 enviar-correo-info-card">
+            <div class="card-body">
+                <p><strong>Alumno:</strong> {{ alumno.nombre }}</p>
+                <p><strong>Número de cuenta:</strong> {{ alumno.numero_cuenta }}</p>
+            </div>
+        </div>
+
+        <form method="post" class="enviar-correo-form">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <input type="submit" value="Enviar correo" class="button default">
+            <a href="{% url 'admin:alumnos_alumno_changelist' %}" class="button">Cancelar</a>
+        </form>
+    </div>
+
+    <style>
+        .enviar-correo-info-card { border-left: 6px solid #0d6efd !important; }
+        .enviar-correo-info-card p { margin: 4px 0; }
+        .enviar-correo-form { margin-top: 16px; }
+        .enviar-correo-form input[type="submit"] { margin-right: 8px; }
+    </style>
+{% endblock %}

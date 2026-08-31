@@ -1,6 +1,23 @@
 from django import forms
 from .models import Alumno
 
+
+class EnviarCorreoForm(forms.Form):
+    DOCUMENTOS = [
+        ('NO_ADEUDO', 'Constancia de No Adeudo'),
+        ('REGISTRO_MATERIAL', 'Registro de Material'),
+        ('CARTA_AUTORIZACION', 'Carta de Autorización'),
+    ]
+
+    correo = forms.EmailField(label='Correo del alumno')
+    documentos = forms.MultipleChoiceField(
+        label='Documentos a enviar',
+        choices=DOCUMENTOS,
+        widget=forms.CheckboxSelectMultiple,
+        initial=[clave for clave, _ in DOCUMENTOS],
+    )
+
+
 class AlumnoForm(forms.ModelForm):
     DOMINIOS_INSTITUCIONALES = ['alumno.uaemex.mx']
 

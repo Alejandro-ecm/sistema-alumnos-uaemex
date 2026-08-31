@@ -6,22 +6,30 @@ from django.contrib.auth.models import Group, User
 from django.core.mail import EmailMessage
 from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect
+from django.template.response import TemplateResponse
 from django.urls import path, reverse
+from .forms import EnviarCorreoForm
 from .models import Alumno, ImpresionConstancia
 from .pdf_docs import generar_carta_pdf, generar_constancia_pdf, generar_registro_material_pdf
 from django.utils.html import format_html, format_html_join, mark_safe
 
+GENERADORES_DOCUMENTOS = {
+    'NO_ADEUDO': generar_constancia_pdf,
+    'REGISTRO_MATERIAL': generar_registro_material_pdf,
+    'CARTA_AUTORIZACION': generar_carta_pdf,
+}
+
 admin.site.unregister(Group)
 admin.site.unregister(User)
 
-ROLES = ['Administrativos', 'Mantenimiento', 'Bibliotecario']
+ROLES = ['Administrativos', 'Superusuario', 'Bibliotecario']
 
 
 class UsuarioCreationForm(UserCreationForm):
     """Alta simplificada: usuario, contraseña (x2), rol y si queda activo.
-    Oculta is_staff/is_superuser — cualquier cuenta creada aquí entra a
-    /admin/ con el rol elegido, nada más (los superusuarios se manejan
-    fuera de esta pantalla, p. ej. con `manage.py createsuperuser`)."""
+    Oculta los checkboxes nativos is_staff/is_superuser de Django — el rol
+    'Superusuario' ya le da is_superuser=True automáticamente (ver
+    UsuarioAdmin.save_model), sin necesidad de tocar esos campos a mano."""
 
     rol = forms.ChoiceField(choices=[(r, r) for r in ROLES], label='Rol')
 
@@ -82,6 +90,8 @@ class UsuarioAdmin(DjangoUserAdmin):
             return HttpResponseForbidden()
         usuario = get_object_or_404(User, pk=user_id)
         rol = request.POST.get('rol', '')
+        # is_superuser se sincroniza solo, vía la señal m2m_changed en
+        # alumnos/signals.py, en cuanto cambia la pertenencia al grupo.
         usuario.groups.set([Group.objects.get(name=rol)] if rol in ROLES else [])
         return HttpResponse('OK')
 
@@ -121,6 +131,8 @@ class UsuarioAdmin(DjangoUserAdmin):
         obj.is_staff = True
         super().save_model(request, obj, form, change)
         rol = form.cleaned_data.get('rol')
+        # is_superuser se sincroniza solo, vía la señal m2m_changed en
+        # alumnos/signals.py, en cuanto cambia la pertenencia al grupo.
         obj.groups.set([Group.objects.get(name=rol)] if rol else [])
 
 
@@ -198,12 +210,8 @@ class AlumnoAdmin(admin.ModelAdmin):
 
     def enviar_correo_btn(self, obj):
         enviar_url = reverse('admin:alumnos_alumno_enviar_correo', args=[obj.pk])
-        if obj.correo:
-            confirmacion = f'¿Enviar las 3 constancias en PDF al correo {obj.correo}?'
-        else:
-            confirmacion = 'Este alumno no tiene un correo registrado. ¿Intentar enviar de todos modos?'
         html = (
-            f'<a href="{enviar_url}" onclick="return confirm(\'{confirmacion}\');" style="'
+            f'<a href="{enviar_url}" style="'
             f'   display:block;padding:4px 8px;background:#0d6efd;color:#fff;'
             f'   border-radius:4px;text-decoration:none;font-size:12px;text-align:center;'
             f'   min-width:110px;">'
@@ -247,38 +255,43 @@ class AlumnoAdmin(admin.ModelAdmin):
             return HttpResponseForbidden()
         alumno = get_object_or_404(Alumno, pk=alumno_id)
 
-        if not alumno.correo:
-            messages.error(request, f'{alumno.nombre} no tiene un correo registrado.')
-            return redirect('admin:alumnos_alumno_changelist')
-
-        try:
-            documentos = [
-                generar_constancia_pdf(alumno),
-                generar_registro_material_pdf(alumno),
-                generar_carta_pdf(alumno),
-            ]
-            correo = EmailMessage(
-                subject='Tus documentos de la Biblioteca — UAEMex',
-                body=(
-                    f'Hola {alumno.nombre},\n\n'
-                    'Adjuntamos tus 3 documentos (Constancia de No Adeudo, Registro de '
-                    'Material y Carta de Autorización) ya autorizados por la Biblioteca '
-                    'de Área, en formato PDF listos para imprimir.\n\n'
-                    'Saludos,\nBiblioteca de Área — Facultad de Medicina y Química, UAEMex'
-                ),
-                to=[alumno.correo],
-            )
-            for buffer, filename in documentos:
-                correo.attach(filename, buffer.read(), 'application/pdf')
-            correo.send(fail_silently=False)
-        except Exception as e:
-            messages.error(request, f'No se pudo enviar el correo a {alumno.correo}: {e}')
+        if request.method == 'POST':
+            form = EnviarCorreoForm(request.POST)
+            if form.is_valid():
+                correo_destino = form.cleaned_data['correo']
+                tipos = form.cleaned_data['documentos']
+                try:
+                    mensaje = EmailMessage(
+                        subject='Tus documentos de la Biblioteca — UAEMex',
+                        body=(
+                            f'Hola {alumno.nombre},\n\n'
+                            'Adjuntamos tus documentos ya autorizados por la Biblioteca '
+                            'de Área, en formato PDF listos para imprimir.\n\n'
+                            'Saludos,\nBiblioteca de Área — Facultad de Medicina y Química, UAEMex'
+                        ),
+                        to=[correo_destino],
+                    )
+                    for tipo in tipos:
+                        buffer, filename = GENERADORES_DOCUMENTOS[tipo](alumno)
+                        mensaje.attach(filename, buffer.read(), 'application/pdf')
+                    mensaje.send(fail_silently=False)
+                except Exception as e:
+                    messages.error(request, f'No se pudo enviar el correo a {correo_destino}: {e}')
+                else:
+                    for tipo in tipos:
+                        ImpresionConstancia.objects.create(alumno=alumno, tipo=tipo)
+                    messages.success(request, f'Correo enviado a {correo_destino}.')
+                return redirect('admin:alumnos_alumno_changelist')
         else:
-            for tipo in ('NO_ADEUDO', 'REGISTRO_MATERIAL', 'CARTA_AUTORIZACION'):
-                ImpresionConstancia.objects.create(alumno=alumno, tipo=tipo)
-            messages.success(request, f'Correo con los 3 documentos enviado a {alumno.correo}.')
+            form = EnviarCorreoForm(initial={'correo': alumno.correo})
 
-        return redirect('admin:alumnos_alumno_changelist')
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Enviar correo',
+            'alumno': alumno,
+            'form': form,
+        }
+        return TemplateResponse(request, 'admin/alumnos/enviar_correo.html', context)
 
 
 admin.site.register(Alumno, AlumnoAdmin)

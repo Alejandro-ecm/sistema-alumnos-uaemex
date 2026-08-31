@@ -77,10 +77,10 @@ class PermisosTests(TestCase):
         )
         self.admvo.groups.add(Group.objects.get(name='Administrativos'))
 
-        self.mant = User.objects.create_user(
+        self.superusuario = User.objects.create_user(
             username='mant1', password='clave-segura-123', is_staff=True
         )
-        self.mant.groups.add(Group.objects.get(name='Mantenimiento'))
+        self.superusuario.groups.add(Group.objects.get(name='Superusuario'))
 
         self.biblio = User.objects.create_user(
             username='biblio1', password='clave-segura-123', is_staff=True
@@ -96,7 +96,7 @@ class PermisosTests(TestCase):
         response = self.client.get(reverse('admin:alumnos_alumno_changelist'))
         self.assertEqual(response.status_code, 200)
 
-    def test_mantenimiento_accede_a_su_panel(self):
+    def test_superusuario_accede_a_panel_mantenimiento(self):
         self.client.login(username='mant1', password='clave-segura-123')
         response = self.client.get(reverse('admin:deteccion_libros_panel_mantenimiento'))
         self.assertEqual(response.status_code, 200)
@@ -106,10 +106,12 @@ class PermisosTests(TestCase):
         response = self.client.get(reverse('admin:deteccion_libros_vista_seguridad'))
         self.assertEqual(response.status_code, 403)
 
-    def test_mantenimiento_no_accede_al_listado_de_alumnos(self):
+    def test_superusuario_accede_al_listado_de_alumnos(self):
+        # El rol 'Superusuario' tiene is_superuser=True (ver alumnos/signals.py),
+        # así que no está limitado como los demás roles: accede a todo el admin.
         self.client.login(username='mant1', password='clave-segura-123')
         response = self.client.get(reverse('admin:alumnos_alumno_changelist'))
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
 
     def test_staff_sin_grupo_no_accede_a_panel_mantenimiento(self):
         self.client.login(username='staffsin', password='clave-segura-123')
@@ -137,9 +139,10 @@ class PermisosTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_administrativo_accede_al_acervo_digital(self):
-        # Administrativos y Mantenimiento tienen catalogo.view_registrobibliografico
-        # (solo lectura) para que el Acervo/Catálogo Digital esté disponible en
-        # los 3 roles de acceso, no solo para Bibliotecario.
+        # Administrativos tiene catalogo.view_registrobibliografico (solo
+        # lectura) para que el Acervo/Catálogo Digital esté disponible en
+        # los 3 roles de acceso, no solo para Bibliotecario (Superusuario
+        # ya lo tiene todo por ser is_superuser=True).
         self.client.login(username='admvo1', password='clave-segura-123')
         response = self.client.get(reverse('admin:catalogo_panel_biblioteca'))
         self.assertEqual(response.status_code, 200)
@@ -156,6 +159,18 @@ class PanelRedirectPorRolTests(TestCase):
         self.client.login(username='biblio_redir', password='clave-segura-123')
         response = self.client.get('/admin/')
         self.assertRedirects(response, reverse('admin:catalogo_panel_biblioteca'))
+
+    def test_superusuario_llega_directo_al_indice_del_admin(self):
+        # is_superuser=True cae en la primera rama de panel_redirect: el
+        # índice normal del admin con todas las secciones, no un panel propio.
+        superusuario = User.objects.create_user(
+            username='superusuario_redir', password='clave-segura-123', is_staff=True
+        )
+        superusuario.groups.add(Group.objects.get(name='Superusuario'))
+        self.client.login(username='superusuario_redir', password='clave-segura-123')
+        response = self.client.get('/admin/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Detección')
 
 
 # ──────────────────────────────────────────────────────────────
@@ -334,10 +349,10 @@ class EstadoBibliotecaAdminTests(TestCase):
 
 class UsuarioAdminTests(TestCase):
     def setUp(self):
-        self.mantenimiento = User.objects.create_user(
+        self.superusuario = User.objects.create_user(
             username='mant_admin', password='clave-segura-123', is_staff=True
         )
-        self.mantenimiento.groups.add(Group.objects.get(name='Mantenimiento'))
+        self.superusuario.groups.add(Group.objects.get(name='Superusuario'))
         self.client.login(username='mant_admin', password='clave-segura-123')
 
     def test_formulario_de_alta_solo_muestra_los_campos_simplificados(self):
@@ -395,3 +410,86 @@ class UsuarioAdminTests(TestCase):
         response = self.client.post(reverse('admin:auth_user_delete', args=[usuario.pk]), {'post': 'yes'})
         self.assertEqual(response.status_code, 302)
         self.assertFalse(User.objects.filter(pk=usuario.pk).exists())
+
+    def test_elegir_rol_superusuario_otorga_is_superuser(self):
+        response = self.client.post(reverse('admin:auth_user_add'), {
+            'username': 'nuevo_superusuario',
+            'password1': 'ClaveSegura123!',
+            'password2': 'ClaveSegura123!',
+            'rol': 'Superusuario',
+            'is_active': 'on',
+            '_save': 'Guardar',
+        })
+        self.assertEqual(response.status_code, 302)
+        nuevo = User.objects.get(username='nuevo_superusuario')
+        self.assertTrue(nuevo.is_superuser)
+        self.assertEqual(list(nuevo.groups.values_list('name', flat=True)), ['Superusuario'])
+
+    def test_quitar_rol_superusuario_revoca_is_superuser(self):
+        usuario = User.objects.create_user(username='deja_de_ser_superusuario', password='x', is_staff=True)
+        usuario.groups.add(Group.objects.get(name='Superusuario'))
+        self.assertTrue(User.objects.get(pk=usuario.pk).is_superuser)
+
+        response = self.client.post(reverse('admin:auth_user_change', args=[usuario.pk]), {
+            'username': 'deja_de_ser_superusuario',
+            'password': usuario.password,
+            'rol': 'Bibliotecario',
+            'is_active': 'on',
+            '_save': 'Guardar',
+        })
+        self.assertEqual(response.status_code, 302)
+        usuario.refresh_from_db()
+        self.assertFalse(usuario.is_superuser)
+
+
+# ──────────────────────────────────────────────────────────────
+# ENVIAR CORREO (botón "Enviar correo" en el listado de alumnos)
+# ──────────────────────────────────────────────────────────────
+
+class EnviarCorreoTests(TestCase):
+    def setUp(self):
+        self.admvo = User.objects.create_user(
+            username='admvo_correo', password='clave-segura-123', is_staff=True
+        )
+        self.admvo.groups.add(Group.objects.get(name='Administrativos'))
+        self.client.login(username='admvo_correo', password='clave-segura-123')
+        self.alumno = _crear_alumno(numero_cuenta='7778999', correo='alumno@alumno.uaemex.mx')
+
+    def _url(self):
+        return reverse('admin:alumnos_alumno_enviar_correo', args=[self.alumno.pk])
+
+    def test_get_muestra_el_formulario_con_el_correo_precargado(self):
+        response = self.client.get(self._url())
+        self.assertContains(response, 'value="alumno@alumno.uaemex.mx"')
+        self.assertContains(response, 'Constancia de No Adeudo')
+        self.assertContains(response, 'Registro de Material')
+        self.assertContains(response, 'Carta de Autorización')
+
+    def test_post_envia_solo_los_documentos_seleccionados_al_correo_editado(self):
+        from django.core import mail
+
+        response = self.client.post(self._url(), {
+            'correo': 'otro@alumno.uaemex.mx',
+            'documentos': ['NO_ADEUDO', 'CARTA_AUTORIZACION'],
+        })
+        self.assertEqual(response.status_code, 302)
+
+        self.assertEqual(len(mail.outbox), 1)
+        enviado = mail.outbox[0]
+        self.assertEqual(enviado.to, ['otro@alumno.uaemex.mx'])
+        self.assertEqual(len(enviado.attachments), 2)
+
+        tipos_registrados = set(
+            ImpresionConstancia.objects.filter(alumno=self.alumno).values_list('tipo', flat=True)
+        )
+        self.assertEqual(tipos_registrados, {'NO_ADEUDO', 'CARTA_AUTORIZACION'})
+
+    def test_post_sin_documentos_seleccionados_no_envia_nada(self):
+        from django.core import mail
+
+        response = self.client.post(self._url(), {
+            'correo': 'otro@alumno.uaemex.mx',
+            'documentos': [],
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 0)

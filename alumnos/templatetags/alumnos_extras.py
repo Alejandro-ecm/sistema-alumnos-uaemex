@@ -5,7 +5,7 @@ from alumnos.models import Alumno
 
 register = template.Library()
 
-ROLES_USUARIO = ['Administrativos', 'Mantenimiento', 'Bibliotecario']
+ROLES_USUARIO = ['Administrativos', 'Superusuario', 'Bibliotecario']
 
 
 @register.simple_tag

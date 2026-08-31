@@ -23,8 +23,12 @@ para que cualquier base de datos nueva quede lista tras `migrate`:
   ampliado en `auditoria/migrations/0002_permiso_auditoria_administrativos.py`):
   gestión de alumnos (ver/editar/eliminar) y lectura de la bitácora de
   auditoría.
-- **Mantenimiento** (`alumnos/migrations/0013_crear_grupos_roles.py`):
-  gestión de eventos de detección y de usuarios del sistema.
+- **Superusuario** (`alumnos/migrations/0013_crear_grupos_roles.py`, antes
+  llamado "Mantenimiento"; renombrado y con `is_superuser=True` desde
+  `alumnos/migrations/0019_mantenimiento_a_superusuario.py`): acceso
+  completo, igual que una cuenta creada con `createsuperuser`. Elegir este
+  rol (o quitarlo) en el alta/edición de usuarios sincroniza `is_superuser`
+  automáticamente vía una señal `m2m_changed` (`alumnos/signals.py`).
 - **Bibliotecario** (`alumnos/migrations/0014_crear_grupo_bibliotecario.py`,
   ampliado en `catalogo/migrations/0004_permiso_constancia_bibliotecario.py`
   y `catalogo/migrations/0005_permiso_constancialibro_bibliotecario.py`):
@@ -40,12 +44,15 @@ usuario (ver `alumnos/views.py`, sección "ATERRIZAJE EN /admin/ SEGÚN ROL").
 **Alta y gestión de cuentas** (`/admin/auth/user/`, `alumnos/admin.py`):
 el admin de `User` está simplificado a lo esencial — usuario, contraseña
 (con confirmación), un único rol a elegir entre los 3 grupos, y si la
-cuenta queda activa. No expone `is_staff`/`is_superuser` ni el selector
-de permisos individuales de Django; cualquier cuenta creada aquí entra a
-`/admin/` con exactamente el rol elegido (`UsuarioAdmin.save_model`
-sincroniza el grupo tras guardar). Para dar de baja a alguien que ya no
-trabaja ahí: desmarcar "Activo" (conserva el historial/auditoría) o usar
-"Eliminar" desde el changelist para borrar la cuenta por completo.
+cuenta queda activa. No expone los checkboxes nativos `is_staff`/
+`is_superuser` ni el selector de permisos individuales de Django;
+cualquier cuenta creada aquí entra a `/admin/` con exactamente el rol
+elegido (`UsuarioAdmin.save_model` sincroniza el grupo tras guardar). Si
+el rol elegido es `Superusuario`, la cuenta queda con `is_superuser=True`
+igual que si se hubiera creado con `createsuperuser` (ver
+`alumnos/signals.py`). Para dar de baja a alguien que ya no trabaja ahí:
+desmarcar "Activo" (conserva el historial/auditoría) o usar "Eliminar"
+desde el changelist para borrar la cuenta por completo.
 
 ## Cómo correr el proyecto (Windows, desarrollo local)
 
@@ -58,6 +65,29 @@ DEBUG=True venv/Scripts/python.exe manage.py migrate
 DEBUG=True venv/Scripts/python.exe manage.py test
 DEBUG=True venv/Scripts/python.exe manage.py runserver
 ```
+
+## Envío de correo con las constancias
+
+El botón "Enviar correo" del listado de alumnos abre una página con un
+formulario (no envía nada de inmediato): muestra el correo que registró el
+alumno (editable, por si tiene un error) y una casilla por cada documento
+(Constancia de No Adeudo, Registro de Material, Carta de Autorización) para
+elegir cuáles mandar — no siempre los 3.
+
+El correo que envía los mensajes es `boxpipo658@gmail.com`
+(`EMAIL_HOST_USER` en `proyecto/settings.py`). Falta un dato que **no** se
+guarda en el repo por seguridad: `EMAIL_HOST_PASSWORD`, una
+[contraseña de aplicación de Gmail](https://myaccount.google.com/apppasswords)
+(no la contraseña normal de la cuenta). Defínela como variable de entorno
+antes de correr el servidor (local o en Railway):
+
+```
+EMAIL_HOST_PASSWORD=xxxx xxxx xxxx xxxx
+```
+
+Sin esa variable, y solo si `DEBUG=True`, los correos no se envían de
+verdad: se imprimen en la consola donde corre `runserver` (backend de
+consola de Django), lo cual sirve para probar el flujo sin credenciales.
 
 ## Constancias de donación y multas por atraso
 
